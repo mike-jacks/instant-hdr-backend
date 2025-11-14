@@ -129,6 +129,7 @@ func main() {
 	processHandler := handlers.NewProcessHandler(imagenClient, dbClient, realtimeClient, cfg.WebhookCallbackURL)
 	statusHandler := handlers.NewStatusHandler(dbClient)
 	filesHandler := handlers.NewFilesHandler(dbClient)
+	profilesHandler := handlers.NewProfilesHandler(imagenClient)
 
 	// Webhook handler requires storage service
 	if storageService == nil {
@@ -167,6 +168,9 @@ func main() {
 	// Status and files
 	api.GET("/projects/:project_id/status", statusHandler.GetStatus)
 	api.GET("/projects/:project_id/files", filesHandler.GetFiles)
+
+	// Profiles
+	api.GET("/profiles", profilesHandler.GetProfiles)
 
 	// Webhook (no auth, uses HMAC)
 	router.POST("/api/v1/webhooks/imagen", webhookHandler.HandleWebhook)

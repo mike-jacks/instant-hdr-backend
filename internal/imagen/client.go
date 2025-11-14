@@ -426,6 +426,49 @@ func (c *Client) GetExportDownloadLinks(projectUUID string) ([]struct {
 	return result.FilesList, nil
 }
 
+// GetUserProfiles returns available editing profiles for the user
+func (c *Client) GetUserProfiles() ([]struct {
+	ProfileKey  int    `json:"profile_key"`
+	ProfileName string `json:"profile_name"`
+	ProfileType string `json:"profile_type"` // "Personal", "Talent", "Shared"
+	ImageType   string `json:"image_type"`   // "RAW", "JPG"
+}, error) {
+	url := strings.TrimSuffix(c.baseURL, "/") + "/profiles"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("x-api-key", c.apiKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get user profiles: status %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var profiles []struct {
+		ProfileKey  int    `json:"profile_key"`
+		ProfileName string `json:"profile_name"`
+		ProfileType string `json:"profile_type"`
+		ImageType   string `json:"image_type"`
+	}
+	if err := json.Unmarshal(body, &profiles); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w, body: %s", err, string(body))
+	}
+
+	return profiles, nil
+}
+
 func (c *Client) DeleteProject(projectUUID string) error {
 	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/" + projectUUID
 	req, err := http.NewRequest("DELETE", url, nil)

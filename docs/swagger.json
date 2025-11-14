@@ -39,6 +39,49 @@
                 }
             }
         },
+        "/profiles": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns a list of available editing profiles for the authenticated user. Each profile has a profile_key (integer) that should be used in process requests. Use the profile_key value when calling the /projects/{project_id}/process endpoint.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profiles"
+                ],
+                "summary": "Get user profiles",
+                "responses": {
+                    "200": {
+                        "description": "Array of profile objects. Each object contains: profile_key (int), profile_name (string), profile_type (string: Personal/Talent/Shared), image_type (string: RAW/JPG)",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/projects": {
             "get": {
                 "security": [
@@ -312,7 +355,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Initiates HDR processing and merging of uploaded images using Imagen AI. Automatically enables JPEG export.",
+                "description": "Initiates HDR processing and merging of uploaded images using Imagen AI. If profile_key is not provided, the system will automatically search for and use a profile named \"NATURAL HOME - JPEG\" (or similar). HDR merge is enabled by default for real estate photography.",
                 "consumes": [
                     "application/json"
                 ],
@@ -332,10 +375,9 @@
                         "required": true
                     },
                     {
-                        "description": "Processing options",
+                        "description": "Processing options. profile_key is optional - if not provided, will auto-select 'NATURAL HOME - JPEG' profile. profile_key should be an integer (can be sent as string, will be converted). Get available profiles from /profiles endpoint.",
                         "name": "request",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/models.ProcessRequest"
                         }
@@ -634,21 +676,25 @@
             "type": "object",
             "properties": {
                 "ai_tools": {
+                    "description": "Deprecated: not used in current Imagen API",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "hdr_merge": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "metadata": {
-                    "description": "Add other Imagen API options as needed",
+                    "description": "Optional metadata to store with the processing request",
                     "type": "object",
                     "additionalProperties": true
                 },
                 "profile_key": {
-                    "type": "string"
+                    "description": "ProfileKey is an integer that identifies the editing profile to use.\nGet available profiles from GET /profiles endpoint.\nCan be sent as string (e.g., \"123\") and will be converted to integer.",
+                    "type": "string",
+                    "example": "123"
                 }
             }
         },

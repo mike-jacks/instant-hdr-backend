@@ -53,16 +53,23 @@ definitions:
   models.ProcessRequest:
     properties:
       ai_tools:
+        description: 'Deprecated: not used in current Imagen API'
         items:
           type: string
         type: array
       hdr_merge:
+        example: true
         type: boolean
       metadata:
         additionalProperties: true
-        description: Add other Imagen API options as needed
+        description: Optional metadata to store with the processing request
         type: object
       profile_key:
+        description: |-
+          ProfileKey is an integer that identifies the editing profile to use.
+          Get available profiles from GET /profiles endpoint.
+          Can be sent as string (e.g., "123") and will be converted to integer.
+        example: "123"
         type: string
     type: object
   models.ProcessResponse:
@@ -169,6 +176,38 @@ paths:
       summary: Health check
       tags:
       - health
+  /profiles:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of available editing profiles for the authenticated
+        user. Each profile has a profile_key (integer) that should be used in process
+        requests. Use the profile_key value when calling the /projects/{project_id}/process
+        endpoint.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Array of profile objects. Each object contains: profile_key
+            (int), profile_name (string), profile_type (string: Personal/Talent/Shared),
+            image_type (string: RAW/JPG)'
+          schema:
+            items:
+              type: object
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user profiles
+      tags:
+      - profiles
   /projects:
     get:
       consumes:
@@ -346,17 +385,21 @@ paths:
       consumes:
       - application/json
       description: Initiates HDR processing and merging of uploaded images using Imagen
-        AI. Automatically enables JPEG export.
+        AI. If profile_key is not provided, the system will automatically search for
+        and use a profile named "NATURAL HOME - JPEG" (or similar). HDR merge is enabled
+        by default for real estate photography.
       parameters:
       - description: Project ID (UUID)
         in: path
         name: project_id
         required: true
         type: string
-      - description: Processing options
+      - description: Processing options. profile_key is optional - if not provided,
+          will auto-select 'NATURAL HOME - JPEG' profile. profile_key should be an
+          integer (can be sent as string, will be converted). Get available profiles
+          from /profiles endpoint.
         in: body
         name: request
-        required: true
         schema:
           $ref: '#/definitions/models.ProcessRequest'
       produces:
