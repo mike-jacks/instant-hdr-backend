@@ -13,8 +13,7 @@ type Config struct {
 
 	// Supabase
 	SupabaseURL           string
-	SupabaseAnonKey       string
-	SupabaseServiceRoleKey string
+	SupabasePublishableKey string
 	SupabaseJWTSecret     string
 	SupabaseStorageBucket string
 
@@ -36,8 +35,7 @@ func Load() (*Config, error) {
 		ImagenWebhookSecret: getEnv("IMAGEN_WEBHOOK_SECRET", ""),
 		
 		SupabaseURL:           getEnv("SUPABASE_URL", ""),
-		SupabaseAnonKey:       getEnv("SUPABASE_ANON_KEY", ""),
-		SupabaseServiceRoleKey: getEnv("SUPABASE_SERVICE_ROLE_KEY", ""),
+		SupabasePublishableKey: getEnv("SUPABASE_PUBLISHABLE_KEY", ""),
 		SupabaseJWTSecret:     getEnv("SUPABASE_JWT_SECRET", ""),
 		SupabaseStorageBucket: getEnv("SUPABASE_STORAGE_BUCKET", "processed-images"),
 		
@@ -63,11 +61,8 @@ func (c *Config) Validate() error {
 	if c.SupabaseURL == "" {
 		return fmt.Errorf("SUPABASE_URL is required")
 	}
-	if c.SupabaseAnonKey == "" {
-		return fmt.Errorf("SUPABASE_ANON_KEY is required")
-	}
-	if c.SupabaseServiceRoleKey == "" {
-		return fmt.Errorf("SUPABASE_SERVICE_ROLE_KEY is required")
+	if c.SupabasePublishableKey == "" {
+		return fmt.Errorf("SUPABASE_PUBLISHABLE_KEY is required")
 	}
 	if c.SupabaseJWTSecret == "" {
 		return fmt.Errorf("SUPABASE_JWT_SECRET is required")

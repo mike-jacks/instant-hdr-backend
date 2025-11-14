@@ -14,14 +14,14 @@ type StorageClient struct {
 	baseURL string
 }
 
-func NewStorageClient(supabaseURL, serviceRoleKey, bucket string) (*StorageClient, error) {
+func NewStorageClient(supabaseURL, publishableKey, bucket string) (*StorageClient, error) {
 	// Ensure URL doesn't have trailing slash
 	baseURL := supabaseURL
 	if len(baseURL) > 0 && baseURL[len(baseURL)-1] == '/' {
 		baseURL = baseURL[:len(baseURL)-1]
 	}
-	client := storage.NewClient(baseURL+"/storage/v1", serviceRoleKey, nil)
-	
+	client := storage.NewClient(baseURL+"/storage/v1", publishableKey, nil)
+
 	return &StorageClient{
 		client:  client,
 		bucket:  bucket,
@@ -32,7 +32,7 @@ func NewStorageClient(supabaseURL, serviceRoleKey, bucket string) (*StorageClien
 func (s *StorageClient) UploadFile(userID, projectID uuid.UUID, filename string, data []byte) (string, string, error) {
 	// Create storage path: users/{user_id}/projects/{project_id}/{filename}
 	storagePath := fmt.Sprintf("users/%s/projects/%s/%s", userID.String(), projectID.String(), filename)
-	
+
 	// Upload file
 	contentType := "image/jpeg"
 	upsert := true
@@ -45,9 +45,9 @@ func (s *StorageClient) UploadFile(userID, projectID uuid.UUID, filename string,
 	}
 
 	// Generate public URL
-	publicURL := fmt.Sprintf("%s/storage/v1/object/public/%s/%s", 
+	publicURL := fmt.Sprintf("%s/storage/v1/object/public/%s/%s",
 		s.baseURL, s.bucket, storagePath)
-	
+
 	return storagePath, publicURL, nil
 }
 
@@ -63,7 +63,7 @@ func (s *StorageClient) DeleteFile(storagePath string) error {
 
 func (s *StorageClient) DeleteProjectFiles(userID, projectID uuid.UUID) error {
 	prefix := fmt.Sprintf("users/%s/projects/%s/", userID.String(), projectID.String())
-	
+
 	// List files with prefix
 	files, err := s.client.ListFiles(s.bucket, prefix, storage.FileSearchOptions{
 		Limit: 1000,
@@ -92,7 +92,6 @@ func (s *StorageClient) DownloadFile(storagePath string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to download file: %w", err)
 	}
-	
+
 	return data, nil
 }
-

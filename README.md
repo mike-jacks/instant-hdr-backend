@@ -54,9 +54,16 @@ go mod download
 1. Go to Project Settings > API
 2. Copy the following:
    - Project URL → `SUPABASE_URL`
-   - anon/public key → `SUPABASE_ANON_KEY`
-   - service_role key → `SUPABASE_SERVICE_ROLE_KEY`
-   - JWT Secret → `SUPABASE_JWT_SECRET`
+   - publishable key → `SUPABASE_PUBLISHABLE_KEY` (replaces the anon key)
+   - JWT Secret → `SUPABASE_JWT_SECRET` (for token verification)
+
+**How to get the JWT Secret:**
+   - In your Supabase dashboard, go to **Project Settings** > **API**
+   - Scroll down to the **JWT Settings** section
+   - Copy the **JWT Secret** value (it's a long string)
+   - This secret is used by Supabase to sign JWT tokens, and your backend uses it to verify those tokens
+
+**Note:** The backend uses the publishable key for Supabase client and storage operations. Ensure your storage bucket has appropriate RLS policies configured if needed. The JWT secret is used for verifying authentication tokens from clients.
 
 ### 4. Configure Environment Variables
 
@@ -166,7 +173,32 @@ instant-hdr-backend/
 
 ## Configuration
 
-See `.env.example` for all required environment variables.
+### Required Environment Variables
+
+```bash
+# Imagen AI Configuration
+IMAGEN_API_KEY=your-imagen-api-key-here
+IMAGEN_API_BASE_URL=https://api.imagen-ai.com/v1/
+IMAGEN_WEBHOOK_SECRET=your-webhook-secret-here
+
+# Supabase Configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your-publishable-key-here
+SUPABASE_JWT_SECRET=your-jwt-secret-here
+SUPABASE_STORAGE_BUCKET=processed-images
+
+# Database Configuration
+DATABASE_URL=postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
+
+# Webhook Configuration
+WEBHOOK_CALLBACK_URL=https://your-backend-url.com/api/v1/webhooks/imagen
+
+# Server Configuration
+PORT=8080
+ENVIRONMENT=development
+```
+
+**Note:** Create a `.env` file in the project root with these variables. See `.env.example` for a template (if available).
 
 ## License
 

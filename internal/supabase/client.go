@@ -11,7 +11,7 @@ type Client struct {
 }
 
 func NewClient(cfg *config.Config) (*Client, error) {
-	client, err := supabase.NewClient(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey, nil)
+	client, err := supabase.NewClient(cfg.SupabaseURL, cfg.SupabasePublishableKey, nil)
 	if err != nil {
 		return nil, err
 	}
