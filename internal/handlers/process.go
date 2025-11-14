@@ -183,8 +183,24 @@ func (h *ProcessHandler) Process(c *gin.Context) {
 	h.realtimeClient.PublishOrderEvent(orderID, "processing_started",
 		supabase.ProcessingStartedPayload(orderID, ""))
 
-	c.JSON(http.StatusOK, models.ProcessResponse{
-		OrderID: orderID.String(),
-		Status:  "processing",
-	})
+	// Build processing params for response
+	processingParams := map[string]interface{}{
+		"enhance_type":        processReq.EnhanceType,
+		"sky_replacement":     processReq.SkyReplacement,
+		"vertical_correction": processReq.VerticalCorrection,
+		"lens_correction":     processReq.LensCorrection,
+		"window_pull_type":    processReq.WindowPullType,
+		"upscale":             processReq.Upscale,
+		"privacy":             processReq.Privacy,
+		"total_brackets":      len(bracketIDs),
+	}
+
+	response := models.ProcessResponse{
+		OrderID:          orderID.String(),
+		Status:           "processing",
+		Message:          "Order processing started successfully",
+		ProcessingParams: processingParams,
+	}
+
+	c.JSON(http.StatusOK, response)
 }

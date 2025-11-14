@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  models.BracketResponse:
+  instant-hdr-backend_internal_models.BracketResponse:
     properties:
       bracket_id:
         type: string
@@ -10,38 +10,43 @@ definitions:
         type: string
       id:
         type: string
+      image_id:
+        type: string
       is_uploaded:
         type: boolean
+      metadata:
+        additionalProperties: true
+        type: object
     type: object
-  models.BracketsResponse:
+  instant-hdr-backend_internal_models.BracketsResponse:
     properties:
       brackets:
         items:
-          $ref: '#/definitions/models.BracketResponse'
+          $ref: '#/definitions/instant-hdr-backend_internal_models.BracketResponse'
         type: array
     type: object
-  models.CreateOrderRequest:
+  instant-hdr-backend_internal_models.CreateOrderRequest:
     properties:
       metadata:
         additionalProperties: true
         description: Optional metadata to store with order
         type: object
     type: object
-  models.ErrorResponse:
+  instant-hdr-backend_internal_models.ErrorResponse:
     properties:
       error:
         type: string
       message:
         type: string
     type: object
-  models.FileInfo:
+  instant-hdr-backend_internal_models.FileInfo:
     properties:
       filename:
         type: string
       size:
         type: integer
     type: object
-  models.FileResponse:
+  instant-hdr-backend_internal_models.FileResponse:
     properties:
       created_at:
         type: string
@@ -58,31 +63,41 @@ definitions:
       storage_url:
         type: string
     type: object
-  models.FilesResponse:
+  instant-hdr-backend_internal_models.FilesResponse:
     properties:
       files:
         items:
-          $ref: '#/definitions/models.FileResponse'
+          $ref: '#/definitions/instant-hdr-backend_internal_models.FileResponse'
         type: array
     type: object
-  models.HealthResponse:
+  instant-hdr-backend_internal_models.HealthResponse:
     properties:
       status:
         type: string
     type: object
-  models.OrderListResponse:
+  instant-hdr-backend_internal_models.OrderListResponse:
     properties:
       orders:
         items:
-          $ref: '#/definitions/models.OrderSummary'
+          $ref: '#/definitions/instant-hdr-backend_internal_models.OrderSummary'
         type: array
     type: object
-  models.OrderResponse:
+  instant-hdr-backend_internal_models.OrderResponse:
     properties:
+      autoenhance_status:
+        description: AutoEnhance data (when available)
+        type: string
       created_at:
         type: string
       error_message:
         type: string
+      images:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      is_processing:
+        type: boolean
       metadata:
         additionalProperties: true
         type: object
@@ -92,10 +107,16 @@ definitions:
         type: integer
       status:
         type: string
+      total_brackets:
+        type: integer
+      total_images:
+        type: integer
       updated_at:
         type: string
+      uploaded_brackets:
+        type: integer
     type: object
-  models.OrderSummary:
+  instant-hdr-backend_internal_models.OrderSummary:
     properties:
       created_at:
         type: string
@@ -108,7 +129,7 @@ definitions:
       updated_at:
         type: string
     type: object
-  models.ProcessRequest:
+  instant-hdr-backend_internal_models.ProcessRequest:
     properties:
       enhance_type:
         description: |-
@@ -141,29 +162,64 @@ definitions:
         example: ONLY_WINDOWS
         type: string
     type: object
-  models.ProcessResponse:
+  instant-hdr-backend_internal_models.ProcessResponse:
     properties:
+      message:
+        type: string
       order_id:
         type: string
+      processing_params:
+        additionalProperties: true
+        type: object
       status:
         type: string
     type: object
-  models.StatusResponse:
+  instant-hdr-backend_internal_models.StatusResponse:
     properties:
+      autoenhance_status:
+        description: AutoEnhance data
+        type: string
+      images:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      is_processing:
+        type: boolean
       order_id:
         type: string
       progress:
         type: integer
       status:
         type: string
+      total_brackets:
+        type: integer
+      total_images:
+        type: integer
       updated_at:
         type: string
+      uploaded_brackets:
+        type: integer
     type: object
-  models.UploadResponse:
+  instant-hdr-backend_internal_models.UploadErrorInfo:
     properties:
+      error:
+        type: string
+      filename:
+        type: string
+      stage:
+        description: '"create_bracket", "upload", "verify", "database"'
+        type: string
+    type: object
+  instant-hdr-backend_internal_models.UploadResponse:
+    properties:
+      errors:
+        items:
+          $ref: '#/definitions/instant-hdr-backend_internal_models.UploadErrorInfo'
+        type: array
       files:
         items:
-          $ref: '#/definitions/models.FileInfo'
+          $ref: '#/definitions/instant-hdr-backend_internal_models.FileInfo'
         type: array
       order_id:
         type: string
@@ -195,7 +251,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.HealthResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.HealthResponse'
       summary: Health check
       tags:
       - health
@@ -210,15 +266,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.OrderListResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.OrderListResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
       security:
       - Bearer: []
       summary: List all orders
@@ -234,26 +290,26 @@ paths:
         in: body
         name: request
         schema:
-          $ref: '#/definitions/models.CreateOrderRequest'
+          $ref: '#/definitions/instant-hdr-backend_internal_models.CreateOrderRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.OrderResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.OrderResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
       security:
       - Bearer: []
       summary: Create a new order
@@ -283,19 +339,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
       security:
       - Bearer: []
       summary: Delete an order
@@ -317,19 +373,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.OrderResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.OrderResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
       security:
       - Bearer: []
       summary: Get order details
@@ -352,19 +408,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.BracketsResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.BracketsResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
       security:
       - Bearer: []
       summary: Get uploaded brackets
@@ -388,19 +444,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.FilesResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.FilesResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
       security:
       - Bearer: []
       summary: Get order files
@@ -424,30 +480,30 @@ paths:
         in: body
         name: request
         schema:
-          $ref: '#/definitions/models.ProcessRequest'
+          $ref: '#/definitions/instant-hdr-backend_internal_models.ProcessRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ProcessResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ProcessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
       security:
       - Bearer: []
       summary: Process images with HDR merge
@@ -471,19 +527,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.StatusResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.StatusResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
       security:
       - Bearer: []
       summary: Get order status
@@ -513,28 +569,69 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.UploadResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.UploadResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
       security:
       - Bearer: []
       summary: Upload images to order
       tags:
       - upload
+  /orders/{order_id}/verify:
+    get:
+      consumes:
+      - application/json
+      description: Checks with AutoEnhance API to verify that an order has uploaded
+        brackets/images
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: order_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: verification result
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Verify order has uploaded images in AutoEnhance
+      tags:
+      - orders
   /webhooks/autoenhance:
     post:
       consumes:
@@ -559,11 +656,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
       summary: AutoEnhance AI webhook endpoint
       tags:
       - webhooks

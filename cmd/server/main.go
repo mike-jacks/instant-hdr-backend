@@ -131,8 +131,8 @@ func main() {
 	ordersHandler := handlers.NewOrdersHandler(autoenhanceClient, dbClient, storageClient)
 	uploadHandler := handlers.NewUploadHandler(autoenhanceClient, dbClient, realtimeClient)
 	processHandler := handlers.NewProcessHandler(autoenhanceClient, dbClient, realtimeClient)
-	statusHandler := handlers.NewStatusHandler(dbClient)
-	filesHandler := handlers.NewFilesHandler(dbClient)
+	statusHandler := handlers.NewStatusHandler(dbClient, autoenhanceClient)
+	filesHandler := handlers.NewFilesHandler(dbClient, autoenhanceClient)
 
 	// Webhook handler requires storage service
 	if storageService == nil {
@@ -166,6 +166,7 @@ func main() {
 	api.POST("/orders", ordersHandler.CreateOrder)
 	api.GET("/orders", ordersHandler.ListOrders)
 	api.GET("/orders/:order_id", ordersHandler.GetOrder)
+	api.GET("/orders/:order_id/verify", ordersHandler.VerifyOrderUploads) // Verify uploads with AutoEnhance
 	api.DELETE("/orders/:order_id", ordersHandler.DeleteOrder)
 
 	// Upload and processing

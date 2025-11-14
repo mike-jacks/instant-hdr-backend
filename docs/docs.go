@@ -39,7 +39,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.HealthResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.HealthResponse"
                         }
                     }
                 }
@@ -67,19 +67,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.OrderListResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.OrderListResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -107,7 +107,7 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/models.CreateOrderRequest"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.CreateOrderRequest"
                         }
                     }
                 ],
@@ -115,25 +115,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.OrderResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.OrderResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -170,25 +170,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.OrderResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.OrderResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -232,25 +232,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -287,25 +287,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.BracketsResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.BracketsResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -342,25 +342,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.FilesResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.FilesResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -397,7 +397,7 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/models.ProcessRequest"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ProcessRequest"
                         }
                     }
                 ],
@@ -405,31 +405,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ProcessResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ProcessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -466,25 +466,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.StatusResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.StatusResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -528,31 +528,93 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.UploadResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.UploadResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{order_id}/verify": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Checks with AutoEnhance API to verify that an order has uploaded brackets/images",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Verify order has uploaded images in AutoEnhance",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "verification result",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -593,13 +655,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -607,7 +669,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.BracketResponse": {
+        "instant-hdr-backend_internal_models.BracketResponse": {
             "type": "object",
             "properties": {
                 "bracket_id": {
@@ -622,23 +684,30 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "image_id": {
+                    "type": "string"
+                },
                 "is_uploaded": {
                     "type": "boolean"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": true
                 }
             }
         },
-        "models.BracketsResponse": {
+        "instant-hdr-backend_internal_models.BracketsResponse": {
             "type": "object",
             "properties": {
                 "brackets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.BracketResponse"
+                        "$ref": "#/definitions/instant-hdr-backend_internal_models.BracketResponse"
                     }
                 }
             }
         },
-        "models.CreateOrderRequest": {
+        "instant-hdr-backend_internal_models.CreateOrderRequest": {
             "type": "object",
             "properties": {
                 "metadata": {
@@ -648,7 +717,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ErrorResponse": {
+        "instant-hdr-backend_internal_models.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -659,7 +728,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.FileInfo": {
+        "instant-hdr-backend_internal_models.FileInfo": {
             "type": "object",
             "properties": {
                 "filename": {
@@ -670,7 +739,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.FileResponse": {
+        "instant-hdr-backend_internal_models.FileResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -696,18 +765,18 @@ const docTemplate = `{
                 }
             }
         },
-        "models.FilesResponse": {
+        "instant-hdr-backend_internal_models.FilesResponse": {
             "type": "object",
             "properties": {
                 "files": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.FileResponse"
+                        "$ref": "#/definitions/instant-hdr-backend_internal_models.FileResponse"
                     }
                 }
             }
         },
-        "models.HealthResponse": {
+        "instant-hdr-backend_internal_models.HealthResponse": {
             "type": "object",
             "properties": {
                 "status": {
@@ -715,25 +784,39 @@ const docTemplate = `{
                 }
             }
         },
-        "models.OrderListResponse": {
+        "instant-hdr-backend_internal_models.OrderListResponse": {
             "type": "object",
             "properties": {
                 "orders": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.OrderSummary"
+                        "$ref": "#/definitions/instant-hdr-backend_internal_models.OrderSummary"
                     }
                 }
             }
         },
-        "models.OrderResponse": {
+        "instant-hdr-backend_internal_models.OrderResponse": {
             "type": "object",
             "properties": {
+                "autoenhance_status": {
+                    "description": "AutoEnhance data (when available)",
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
                 "error_message": {
                     "type": "string"
+                },
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "is_processing": {
+                    "type": "boolean"
                 },
                 "metadata": {
                     "type": "object",
@@ -748,12 +831,21 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
+                "total_brackets": {
+                    "type": "integer"
+                },
+                "total_images": {
+                    "type": "integer"
+                },
                 "updated_at": {
                     "type": "string"
+                },
+                "uploaded_brackets": {
+                    "type": "integer"
                 }
             }
         },
-        "models.OrderSummary": {
+        "instant-hdr-backend_internal_models.OrderSummary": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -773,7 +865,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ProcessRequest": {
+        "instant-hdr-backend_internal_models.ProcessRequest": {
             "type": "object",
             "properties": {
                 "enhance_type": {
@@ -813,20 +905,41 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ProcessResponse": {
+        "instant-hdr-backend_internal_models.ProcessResponse": {
             "type": "object",
             "properties": {
+                "message": {
+                    "type": "string"
+                },
                 "order_id": {
                     "type": "string"
+                },
+                "processing_params": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "status": {
                     "type": "string"
                 }
             }
         },
-        "models.StatusResponse": {
+        "instant-hdr-backend_internal_models.StatusResponse": {
             "type": "object",
             "properties": {
+                "autoenhance_status": {
+                    "description": "AutoEnhance data",
+                    "type": "string"
+                },
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "is_processing": {
+                    "type": "boolean"
+                },
                 "order_id": {
                     "type": "string"
                 },
@@ -836,18 +949,48 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
+                "total_brackets": {
+                    "type": "integer"
+                },
+                "total_images": {
+                    "type": "integer"
+                },
                 "updated_at": {
+                    "type": "string"
+                },
+                "uploaded_brackets": {
+                    "type": "integer"
+                }
+            }
+        },
+        "instant-hdr-backend_internal_models.UploadErrorInfo": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "stage": {
+                    "description": "\"create_bracket\", \"upload\", \"verify\", \"database\"",
                     "type": "string"
                 }
             }
         },
-        "models.UploadResponse": {
+        "instant-hdr-backend_internal_models.UploadResponse": {
             "type": "object",
             "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/instant-hdr-backend_internal_models.UploadErrorInfo"
+                    }
+                },
                 "files": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.FileInfo"
+                        "$ref": "#/definitions/instant-hdr-backend_internal_models.FileInfo"
                     }
                 },
                 "order_id": {

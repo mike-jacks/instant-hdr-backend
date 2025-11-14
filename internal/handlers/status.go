@@ -1,22 +1,26 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"instant-hdr-backend/internal/autoenhance"
 	"instant-hdr-backend/internal/middleware"
 	"instant-hdr-backend/internal/models"
 	"instant-hdr-backend/internal/supabase"
 )
 
 type StatusHandler struct {
-	dbClient *supabase.DatabaseClient
+	dbClient          *supabase.DatabaseClient
+	autoenhanceClient *autoenhance.Client
 }
 
-func NewStatusHandler(dbClient *supabase.DatabaseClient) *StatusHandler {
+func NewStatusHandler(dbClient *supabase.DatabaseClient, autoenhanceClient *autoenhance.Client) *StatusHandler {
 	return &StatusHandler{
-		dbClient: dbClient,
+		dbClient:          dbClient,
+		autoenhanceClient: autoenhanceClient,
 	}
 }
 
@@ -67,10 +71,46 @@ func (h *StatusHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.StatusResponse{
-		OrderID:  orderID.String(),
-		Status:   order.Status,
-		Progress: order.Progress,
+	response := models.StatusResponse{
+		OrderID:   orderID.String(),
+		Status:    order.Status,
+		Progress:  order.Progress,
 		UpdatedAt: order.UpdatedAt,
-	})
+	}
+
+	// Fetch AutoEnhance data for real-time status
+	if h.autoenhanceClient != nil {
+		autoenhanceOrder, err := h.autoenhanceClient.GetOrder(order.ID.String())
+		if err == nil {
+			response.AutoEnhanceStatus = autoenhanceOrder.Status
+			response.TotalImages = int(autoenhanceOrder.TotalImages)
+			response.IsProcessing = autoenhanceOrder.IsProcessing
+
+			// Convert images to generic map
+			if len(autoenhanceOrder.Images) > 0 {
+				response.Images = make([]map[string]interface{}, len(autoenhanceOrder.Images))
+				for i, img := range autoenhanceOrder.Images {
+					imgJSON, _ := json.Marshal(img)
+					var imgMap map[string]interface{}
+					json.Unmarshal(imgJSON, &imgMap)
+					response.Images[i] = imgMap
+				}
+			}
+		}
+
+		// Get brackets info
+		brackets, err := h.autoenhanceClient.GetOrderBrackets(order.ID.String())
+		if err == nil {
+			response.TotalBrackets = len(brackets.Brackets)
+			uploadedCount := 0
+			for _, bracket := range brackets.Brackets {
+				if bracket.IsUploaded {
+					uploadedCount++
+				}
+			}
+			response.UploadedBrackets = uploadedCount
+		}
+	}
+
+	c.JSON(http.StatusOK, response)
 }

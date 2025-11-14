@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -132,12 +133,16 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 
 	// Create brackets and upload files
 	uploadedFiles := make([]models.FileInfo, 0)
-	uploadErrors := make([]string, 0)
+	uploadErrors := make([]models.UploadErrorInfo, 0)
 	for _, file := range files {
 		// Open file
 		src, err := file.Open()
 		if err != nil {
-			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to open: %v", file.Filename, err))
+			uploadErrors = append(uploadErrors, models.UploadErrorInfo{
+				Filename: file.Filename,
+				Error:    fmt.Sprintf("failed to open file: %v", err),
+				Stage:    "file_open",
+			})
 			continue
 		}
 
@@ -145,7 +150,11 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		data, err := io.ReadAll(src)
 		src.Close()
 		if err != nil {
-			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to read: %v", file.Filename, err))
+			uploadErrors = append(uploadErrors, models.UploadErrorInfo{
+				Filename: file.Filename,
+				Error:    fmt.Sprintf("failed to read file data: %v", err),
+				Stage:    "file_read",
+			})
 			continue
 		}
 
@@ -173,13 +182,21 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 			return err
 		}, 3)
 		if err != nil {
-			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to create bracket: %v", file.Filename, err))
+			uploadErrors = append(uploadErrors, models.UploadErrorInfo{
+				Filename: file.Filename,
+				Error:    fmt.Sprintf("failed to create bracket in AutoEnhance: %v", err),
+				Stage:    "create_bracket",
+			})
 			continue
 		}
 
 		// Check if upload URL is provided
 		if bracket.UploadURL == "" {
-			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: no upload URL provided by AutoEnhance", file.Filename))
+			uploadErrors = append(uploadErrors, models.UploadErrorInfo{
+				Filename: file.Filename,
+				Error:    "AutoEnhance did not provide an upload URL in the bracket creation response",
+				Stage:    "create_bracket",
+			})
 			continue
 		}
 
@@ -188,14 +205,59 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 			return h.autoenhanceClient.UploadFile(bracket.UploadURL, data, mimeType)
 		}, 3)
 		if err != nil {
-			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to upload to AutoEnhance: %v", file.Filename, err))
+			uploadErrors = append(uploadErrors, models.UploadErrorInfo{
+				Filename: file.Filename,
+				Error:    fmt.Sprintf("failed to upload file to AutoEnhance storage: %v", err),
+				Stage:    "upload",
+			})
 			continue
 		}
 
-		// Note: We don't verify is_uploaded immediately because AutoEnhance processes
-		// uploads asynchronously. The HTTP upload request succeeding (200/204) is sufficient
-		// to confirm the file was received. The is_uploaded flag will be updated by AutoEnhance
-		// after they process the file, and we can check it later if needed.
+		// Verify the upload by checking the bracket status with AutoEnhance
+		// AutoEnhance processes uploads asynchronously, so we wait a bit and retry
+		var verifiedBracket *autoenhance.BracketOut
+		verified := false
+		maxRetries := 3
+		retryDelay := 500 * time.Millisecond
+		
+		for attempt := 0; attempt < maxRetries; attempt++ {
+			if attempt > 0 {
+				time.Sleep(retryDelay)
+			}
+			
+			var err error
+			verifiedBracket, err = h.autoenhanceClient.GetBracket(bracket.BracketID)
+			if err != nil {
+				if attempt == maxRetries-1 {
+					// Last attempt failed - log warning but don't fail upload
+					uploadErrors = append(uploadErrors, models.UploadErrorInfo{
+						Filename: file.Filename,
+						Error:    fmt.Sprintf("upload HTTP succeeded but verification failed after %d attempts: %v", maxRetries, err),
+						Stage:    "verify",
+					})
+				}
+				continue
+			}
+			
+			// Check if bracket is marked as uploaded
+			if verifiedBracket.IsUploaded {
+				verified = true
+				// Update our DB with the actual status from AutoEnhance
+				if verifiedBracket.ImageID != "" && verifiedBracket.ImageID != bracket.ImageID {
+					bracket.ImageID = verifiedBracket.ImageID
+				}
+				break
+			}
+		}
+		
+		// If still not verified after retries, log a warning
+		if !verified && verifiedBracket != nil {
+			uploadErrors = append(uploadErrors, models.UploadErrorInfo{
+				Filename: file.Filename,
+				Error:    fmt.Sprintf("upload HTTP succeeded (200/204) but AutoEnhance reports is_uploaded=false after %d verification attempts. This may be normal - AutoEnhance processes uploads asynchronously. BracketID: %s", maxRetries, bracket.BracketID),
+				Stage:    "verify",
+			})
+		}
 
 		// Store bracket in database
 		// Mark as uploaded since the HTTP request succeeded (200/204)
@@ -221,7 +283,11 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 			}
 		}
 		if err := h.dbClient.CreateBracket(bracketModel); err != nil {
-			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to save bracket to database: %v", file.Filename, err))
+			uploadErrors = append(uploadErrors, models.UploadErrorInfo{
+				Filename: file.Filename,
+				Error:    fmt.Sprintf("upload succeeded but failed to save bracket to database: %v", err),
+				Stage:    "database",
+			})
 			// Continue anyway since the upload succeeded
 		}
 
@@ -234,7 +300,11 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 	if len(uploadedFiles) == 0 {
 		errorMsg := "failed to upload any files"
 		if len(uploadErrors) > 0 {
-			errorMsg += ": " + fmt.Sprintf("%v", uploadErrors)
+			errorDetails := make([]string, len(uploadErrors))
+			for i, e := range uploadErrors {
+				errorDetails[i] = fmt.Sprintf("%s [%s]: %s", e.Filename, e.Stage, e.Error)
+			}
+			errorMsg += ": " + fmt.Sprintf("%v", errorDetails)
 		}
 		h.dbClient.UpdateOrderError(orderID, errorMsg)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
@@ -259,8 +329,12 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 	}
 	if len(uploadErrors) > 0 {
 		response.Errors = uploadErrors
-		// Also log to database
-		errorMsg := fmt.Sprintf("Some files failed to upload: %v", uploadErrors)
+		// Also log to database with detailed error info
+		errorDetails := make([]string, len(uploadErrors))
+		for i, e := range uploadErrors {
+			errorDetails[i] = fmt.Sprintf("%s [%s]: %s", e.Filename, e.Stage, e.Error)
+		}
+		errorMsg := fmt.Sprintf("Some files had issues: %v", errorDetails)
 		h.dbClient.UpdateOrderError(orderID, errorMsg)
 	}
 

@@ -5,18 +5,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"instant-hdr-backend/internal/autoenhance"
 	"instant-hdr-backend/internal/middleware"
 	"instant-hdr-backend/internal/models"
 	"instant-hdr-backend/internal/supabase"
 )
 
 type FilesHandler struct {
-	dbClient *supabase.DatabaseClient
+	dbClient          *supabase.DatabaseClient
+	autoenhanceClient *autoenhance.Client
 }
 
-func NewFilesHandler(dbClient *supabase.DatabaseClient) *FilesHandler {
+func NewFilesHandler(dbClient *supabase.DatabaseClient, autoenhanceClient *autoenhance.Client) *FilesHandler {
 	return &FilesHandler{
-		dbClient: dbClient,
+		dbClient:          dbClient,
+		autoenhanceClient: autoenhanceClient,
 	}
 }
 
@@ -136,8 +139,8 @@ func (h *FilesHandler) GetBrackets(c *gin.Context) {
 		return
 	}
 
-	// Get uploaded brackets
-	brackets, err := h.dbClient.GetBracketsByOrderID(orderID)
+	// Get brackets from our database
+	dbBrackets, err := h.dbClient.GetBracketsByOrderID(orderID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "failed to get brackets",
@@ -146,15 +149,47 @@ func (h *FilesHandler) GetBrackets(c *gin.Context) {
 		return
 	}
 
-	bracketResponses := make([]models.BracketResponse, len(brackets))
-	for i, bracket := range brackets {
-		bracketResponses[i] = models.BracketResponse{
+	// Also fetch brackets from AutoEnhance to verify and sync
+	var autoenhanceBrackets map[string]*autoenhance.BracketOut
+	if h.autoenhanceClient != nil {
+		orderBrackets, err := h.autoenhanceClient.GetOrderBrackets(orderID.String())
+		if err == nil && orderBrackets != nil {
+			// Create a map for quick lookup
+			autoenhanceBrackets = make(map[string]*autoenhance.BracketOut)
+			for i := range orderBrackets.Brackets {
+				b := &orderBrackets.Brackets[i]
+				autoenhanceBrackets[b.BracketID] = b
+			}
+		}
+	}
+
+	// Combine data from both sources, prioritizing AutoEnhance status and metadata
+	bracketResponses := make([]models.BracketResponse, len(dbBrackets))
+	for i, bracket := range dbBrackets {
+		response := models.BracketResponse{
 			ID:         bracket.ID.String(),
 			BracketID:  bracket.BracketID,
 			Filename:   bracket.Filename,
 			IsUploaded: bracket.IsUploaded,
 			CreatedAt:  bracket.CreatedAt,
 		}
+
+		// If we have data from AutoEnhance, use their status and metadata (more accurate)
+		if aeBracket, exists := autoenhanceBrackets[bracket.BracketID]; exists {
+			response.IsUploaded = aeBracket.IsUploaded
+			
+			// Include image_id if available
+			if aeBracket.ImageID != "" {
+				response.ImageID = aeBracket.ImageID
+			}
+			
+			// Include full metadata from AutoEnhance
+			if aeBracket.Metadata != nil {
+				response.Metadata = aeBracket.Metadata
+			}
+		}
+
+		bracketResponses[i] = response
 	}
 
 	c.JSON(http.StatusOK, models.BracketsResponse{Brackets: bracketResponses})
