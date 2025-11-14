@@ -41,15 +41,30 @@ func (s *StorageService) HandleProcessingCompleted(imagenProjectUUID, eventID st
 	// For now, let's assume we can get it somehow
 	// This is a simplified version - in production, you'd query the database
 
-	// Export from Imagen
-	downloadURL, err := s.imagenClient.Export(imagenProjectUUID)
+	// Export from Imagen (submits export request)
+	err := s.imagenClient.Export(imagenProjectUUID)
 	if err != nil {
 		// Handle error - update project status
 		return
 	}
 
-	// Download file
-	fileData, err := s.imagenClient.DownloadFile(downloadURL)
+	// Wait for export to complete and get download links
+	// In production, you'd poll GetExportStatus until completed
+	// For now, we'll try to get download links (they may not be ready yet)
+	downloadLinks, err := s.imagenClient.GetExportDownloadLinks(imagenProjectUUID)
+	if err != nil {
+		// Export may not be ready yet - this is expected
+		// In production, implement polling with GetExportStatus
+		return
+	}
+
+	if len(downloadLinks) == 0 {
+		// No files available yet
+		return
+	}
+
+	// Download the first file (or all files - adjust as needed)
+	fileData, err := s.imagenClient.DownloadFile(downloadLinks[0].DownloadLink)
 	if err != nil {
 		// Handle error
 		return

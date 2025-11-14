@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -86,22 +87,30 @@ func (h *ProcessHandler) Process(c *gin.Context) {
 		return
 	}
 
-	// Build edit request
+	// Build edit request according to OpenAPI spec
+	// Convert ProfileKey from string to int (OpenAPI spec requires int)
+	var profileKey int
+	if req.ProfileKey != "" {
+		_, err := fmt.Sscanf(req.ProfileKey, "%d", &profileKey)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, models.ErrorResponse{
+				Error:   "invalid profile_key",
+				Message: "profile_key must be a valid integer",
+			})
+			return
+		}
+	}
+
 	editReq := imagen.EditRequest{
-		ProfileKey:  req.ProfileKey,
-		HDRMerge:    req.HDRMerge,
-		JPEGExport:  true, // Always true
-		AITools:     req.AITools,
-		CallbackURL: h.webhookURL,
-		Metadata:    req.Metadata,
+		ProfileKey:      profileKey,
+		HDRMerge:        req.HDRMerge,
+		CallbackURL:     h.webhookURL,
+		PhotographyType: "REAL_ESTATE", // Default for real estate shoots
 	}
 
 	// Initiate processing with retry
-	var editID string
 	err = h.imagenClient.RetryWithBackoff(func() error {
-		var err error
-		editID, err = h.imagenClient.Edit(project.ImagenProjectUUID, editReq)
-		return err
+		return h.imagenClient.Edit(project.ImagenProjectUUID, editReq)
 	}, 3)
 	if err != nil {
 		h.dbClient.UpdateProjectError(projectID, err.Error())
@@ -112,17 +121,16 @@ func (h *ProcessHandler) Process(c *gin.Context) {
 		return
 	}
 
-	// Update project with edit_id
-	h.dbClient.UpdateProjectEditID(projectID, editID)
+	// Update project status (no editID returned from API)
 	h.dbClient.UpdateProjectStatus(projectID, "processing", 0)
 
 	// Publish processing_started event
 	h.realtimeClient.PublishProjectEvent(projectID, "processing_started",
-		supabase.ProcessingStartedPayload(projectID, editID))
+		supabase.ProcessingStartedPayload(projectID, ""))
 
 	c.JSON(http.StatusOK, models.ProcessResponse{
 		ProjectID: projectID.String(),
 		Status:    "processing",
-		EditID:    editID,
+		EditID:    "", // No editID returned from API
 	})
 }

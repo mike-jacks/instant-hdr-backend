@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -28,40 +29,40 @@ type UploadLinkRequest struct {
 }
 
 type UploadLinkResponse struct {
-	Data struct {
-		FilesList []struct {
-			FileName   string `json:"file_name"`
-			UploadLink string `json:"upload_link"`
-		} `json:"files_list"`
-	} `json:"data"`
+	FilesList []struct {
+		FileName   string `json:"file_name"`
+		UploadLink string `json:"upload_link"`
+	} `json:"files_list"`
 }
 
 type EditRequest struct {
-	ProfileKey  string                 `json:"profile_key,omitempty"`
-	HDRMerge    bool                   `json:"hdr_merge"`
-	JPEGExport  bool                   `json:"jpeg_export"`
-	AITools     []string               `json:"ai_tools,omitempty"`
-	CallbackURL string                 `json:"callback_url,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ProfileKey              int                    `json:"profile_key"`
+	Crop                    bool                   `json:"crop,omitempty"`
+	PortraitCrop            bool                   `json:"portrait_crop,omitempty"`
+	HeadshotCrop            bool                   `json:"headshot_crop,omitempty"`
+	CropAspectRatio         string                 `json:"crop_aspect_ratio,omitempty"` // "2X3", "4X5", "5X7"
+	HDRMerge                bool                   `json:"hdr_merge,omitempty"`
+	Straighten              bool                   `json:"straighten,omitempty"`
+	SubjectMask             bool                   `json:"subject_mask,omitempty"`
+	PhotographyType         string                 `json:"photography_type,omitempty"` // "NO_TYPE", "REAL_ESTATE", etc.
+	CallbackURL             string                 `json:"callback_url,omitempty"`
+	SmoothSkin              bool                   `json:"smooth_skin,omitempty"`
+	PerspectiveCorrection    bool                   `json:"perspective_correction,omitempty"`
+	WindowPull              bool                   `json:"window_pull,omitempty"`
+	SkyReplacement          bool                   `json:"sky_replacement,omitempty"`
+	SkyReplacementTemplateID int                    `json:"sky_replacement_template_id,omitempty"`
+	HDROutputCompression    string                 `json:"hdr_output_compression,omitempty"` // "LOSSY", "LOSSLESS"
 }
 
-type EditResponse struct {
-	Data struct {
-		EditID string `json:"edit_id"`
-	} `json:"data"`
-}
+// EditResponse is empty according to OpenAPI spec - no response body
 
 type EditStatusResponse struct {
-	Data struct {
-		Status   string `json:"status"`
-		Progress int    `json:"progress"`
-	} `json:"data"`
+	Status string `json:"status"` // "Pending", "In Progress", "Failed", "Completed"
 }
 
 type ExportResponse struct {
-	Data struct {
-		DownloadURL string `json:"download_url"`
-	} `json:"data"`
+	ProjectUUID string `json:"project_uuid"`
+	Message     string `json:"message"`
 }
 
 func NewClient(baseURL, apiKey string) *Client {
@@ -75,7 +76,13 @@ func NewClient(baseURL, apiKey string) *Client {
 }
 
 func (c *Client) CreateProject() (string, error) {
-	req, err := http.NewRequest("POST", c.baseURL+"/projects/", nil)
+	// According to OpenAPI spec: POST /v1/projects/ or /v1/projects
+	// Try with trailing slash first (as shown in OpenAPI spec)
+	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/"
+	
+	// Send empty JSON body (request body is optional but some APIs expect it)
+	jsonData := []byte("{}")
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -89,14 +96,22 @@ func (c *Client) CreateProject() (string, error) {
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("failed to create project: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
 	var result CreateProjectResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w, body: %s", err, string(body))
+	}
+
+	if result.Data.ProjectUUID == "" {
+		return "", fmt.Errorf("project_uuid is empty in response, body: %s", string(body))
 	}
 
 	return result.Data.ProjectUUID, nil
@@ -119,7 +134,8 @@ func (c *Client) GetUploadLinks(projectUUID string, filenames []string) ([]strin
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", c.baseURL+"/projects/"+projectUUID+"/get_temporary_upload_links", bytes.NewBuffer(jsonData))
+	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/" + projectUUID + "/get_temporary_upload_links"
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -143,8 +159,8 @@ func (c *Client) GetUploadLinks(projectUUID string, filenames []string) ([]strin
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	uploadLinks := make([]string, len(result.Data.FilesList))
-	for i, file := range result.Data.FilesList {
+	uploadLinks := make([]string, len(result.FilesList))
+	for i, file := range result.FilesList {
 		uploadLinks[i] = file.UploadLink
 	}
 
@@ -173,18 +189,16 @@ func (c *Client) UploadFile(uploadLink string, data []byte) error {
 	return nil
 }
 
-func (c *Client) Edit(projectUUID string, editReq EditRequest) (string, error) {
-	// Always set jpeg_export to true
-	editReq.JPEGExport = true
-
+func (c *Client) Edit(projectUUID string, editReq EditRequest) error {
 	jsonData, err := json.Marshal(editReq)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
+		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", c.baseURL+"/projects/"+projectUUID+"/edit", bytes.NewBuffer(jsonData))
+	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/" + projectUUID + "/edit"
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("x-api-key", c.apiKey)
@@ -192,25 +206,23 @@ func (c *Client) Edit(projectUUID string, editReq EditRequest) (string, error) {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to execute request: %w", err)
+		return fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to edit project: status %d, body: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("failed to edit project: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	var result EditResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return result.Data.EditID, nil
+	// OpenAPI spec shows empty response body for edit endpoint
+	return nil
 }
 
-func (c *Client) GetEditStatus(projectUUID, editID string) (*EditStatusResponse, error) {
-	req, err := http.NewRequest("GET", c.baseURL+"/projects/"+projectUUID+"/edit/"+editID+"/status", nil)
+func (c *Client) GetEditStatus(projectUUID string) (*EditStatusResponse, error) {
+	// According to OpenAPI spec: GET /v1/projects/{project_uuid}/edit/status
+	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/" + projectUUID + "/edit/status"
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -236,10 +248,11 @@ func (c *Client) GetEditStatus(projectUUID, editID string) (*EditStatusResponse,
 	return &result, nil
 }
 
-func (c *Client) Export(projectUUID string) (string, error) {
-	req, err := http.NewRequest("POST", c.baseURL+"/projects/"+projectUUID+"/export", nil)
+func (c *Client) Export(projectUUID string) error {
+	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/" + projectUUID + "/export"
+	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("x-api-key", c.apiKey)
@@ -247,21 +260,23 @@ func (c *Client) Export(projectUUID string) (string, error) {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to execute request: %w", err)
+		return fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to export project: status %d, body: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("failed to export project: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
 	var result ExportResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
+		return fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return result.Data.DownloadURL, nil
+	// Export just submits the request, doesn't return download URL
+	// Use GetExportDownloadLinks to get the download links after checking status
+	return nil
 }
 
 func (c *Client) DownloadFile(downloadURL string) ([]byte, error) {
@@ -289,8 +304,118 @@ func (c *Client) DownloadFile(downloadURL string) ([]byte, error) {
 	return data, nil
 }
 
+// GetEditDownloadLinks returns temporary download links for edited files
+func (c *Client) GetEditDownloadLinks(projectUUID string) ([]struct {
+	FileName     string `json:"file_name"`
+	DownloadLink string `json:"download_link"`
+}, error) {
+	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/" + projectUUID + "/edit/get_temporary_download_links"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("x-api-key", c.apiKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to get edit download links: status %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		FilesList []struct {
+			FileName     string `json:"file_name"`
+			DownloadLink string `json:"download_link"`
+		} `json:"files_list"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return result.FilesList, nil
+}
+
+// GetExportStatus returns the export status for a project
+func (c *Client) GetExportStatus(projectUUID string) (*struct {
+	ProjectUUID string `json:"project_uuid"`
+	Status      string `json:"status"` // "Pending", "In Progress", "Failed", "Completed"
+}, error) {
+	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/" + projectUUID + "/export/status"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("x-api-key", c.apiKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to get export status: status %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		ProjectUUID string `json:"project_uuid"`
+		Status      string `json:"status"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
+
+// GetExportDownloadLinks returns temporary download links for exported files
+func (c *Client) GetExportDownloadLinks(projectUUID string) ([]struct {
+	FileName     string `json:"file_name"`
+	DownloadLink string `json:"download_link"`
+}, error) {
+	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/" + projectUUID + "/export/get_temporary_download_links"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("x-api-key", c.apiKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to get export download links: status %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		FilesList []struct {
+			FileName     string `json:"file_name"`
+			DownloadLink string `json:"download_link"`
+		} `json:"files_list"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return result.FilesList, nil
+}
+
 func (c *Client) DeleteProject(projectUUID string) error {
-	req, err := http.NewRequest("DELETE", c.baseURL+"/projects/"+projectUUID, nil)
+	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/" + projectUUID
+	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
