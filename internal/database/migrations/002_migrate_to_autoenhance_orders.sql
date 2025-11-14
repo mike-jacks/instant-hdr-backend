@@ -73,17 +73,59 @@ BEGIN
 END $$;
 
 -- Step 4: Update foreign key constraint
-ALTER TABLE IF EXISTS order_files 
-    DROP CONSTRAINT IF EXISTS project_files_project_id_fkey;
-ALTER TABLE IF EXISTS order_files 
-    ADD CONSTRAINT order_files_order_id_fkey 
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
+DO $$
+DECLARE
+    constraint_exists boolean;
+BEGIN
+    -- Check and drop old constraint on order_files if it exists
+    SELECT EXISTS (
+        SELECT 1 FROM pg_constraint c
+        JOIN pg_class t ON c.conrelid = t.oid
+        WHERE t.relname = 'order_files' 
+        AND c.conname = 'project_files_project_id_fkey'
+    ) INTO constraint_exists;
+    
+    IF constraint_exists THEN
+        ALTER TABLE order_files DROP CONSTRAINT project_files_project_id_fkey;
+    END IF;
+    
+    -- Check and drop old constraint on project_files if table and constraint exist
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'project_files') THEN
+        SELECT EXISTS (
+            SELECT 1 FROM pg_constraint c
+            JOIN pg_class t ON c.conrelid = t.oid
+            WHERE t.relname = 'project_files' 
+            AND c.conname = 'project_files_project_id_fkey'
+        ) INTO constraint_exists;
+        
+        IF constraint_exists THEN
+            ALTER TABLE project_files DROP CONSTRAINT project_files_project_id_fkey;
+        END IF;
+    END IF;
+END $$;
+
+-- Add new constraint only if it doesn't exist
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'order_files') THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint c
+            JOIN pg_class t ON c.conrelid = t.oid
+            WHERE t.relname = 'order_files' 
+            AND c.conname = 'order_files_order_id_fkey'
+        ) THEN
+            ALTER TABLE order_files 
+            ADD CONSTRAINT order_files_order_id_fkey 
+            FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
+        END IF;
+    END IF;
+END $$;
 
 -- Step 5: Create brackets table
 CREATE TABLE IF NOT EXISTS brackets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    bracket_id TEXT NOT NULL UNIQUE,
+    order_id UUID NOT NULL,
+    bracket_id TEXT NOT NULL,
     image_id TEXT,
     filename TEXT NOT NULL,
     upload_url TEXT,
@@ -91,6 +133,28 @@ CREATE TABLE IF NOT EXISTS brackets (
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Add foreign key constraint for brackets if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'brackets_order_id_fkey'
+    ) THEN
+        ALTER TABLE brackets 
+        ADD CONSTRAINT brackets_order_id_fkey 
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
+    END IF;
+    
+    -- Add unique constraint on bracket_id if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'brackets_bracket_id_key'
+    ) THEN
+        ALTER TABLE brackets 
+        ADD CONSTRAINT brackets_bracket_id_key UNIQUE (bracket_id);
+    END IF;
+END $$;
 
 -- Step 6: Update indexes
 DROP INDEX IF EXISTS idx_projects_user_id;
