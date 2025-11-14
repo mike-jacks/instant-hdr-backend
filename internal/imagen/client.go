@@ -314,20 +314,19 @@ func (c *Client) DeleteProject(projectUUID string) error {
 // RetryWithBackoff executes a function with exponential backoff retry logic
 func (c *Client) RetryWithBackoff(fn func() error, maxRetries int) error {
 	backoffs := []time.Duration{1 * time.Second, 2 * time.Second, 4 * time.Second}
-	
+
 	var lastErr error
 	for i := 0; i < maxRetries; i++ {
 		err := fn()
 		if err == nil {
 			return nil
 		}
-		
+
 		lastErr = err
 		if i < len(backoffs) {
 			time.Sleep(backoffs[i])
 		}
 	}
-	
+
 	return fmt.Errorf("failed after %d retries: %w", maxRetries, lastErr)
 }
-

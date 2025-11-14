@@ -25,7 +25,7 @@ go.work
 go.work.sum
 
 # env file
-.env
+/.env
 
 # Compiled binary (root level only - use /server to anchor to root)
 /server

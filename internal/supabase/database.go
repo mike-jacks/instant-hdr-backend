@@ -29,7 +29,7 @@ func NewDatabaseClient(connectionString string) (*DatabaseClient, error) {
 
 func (d *DatabaseClient) CreateProject(userID uuid.UUID, imagenProjectUUID string, metadata map[string]interface{}) (*models.Project, error) {
 	metadataJSON, _ := json.Marshal(metadata)
-	
+
 	var project models.Project
 	err := d.db.QueryRow(`
 		INSERT INTO projects (user_id, imagen_project_uuid, status, metadata)
@@ -188,4 +188,3 @@ func (d *DatabaseClient) GetProjectByImagenUUID(imagenProjectUUID string) (*mode
 func (d *DatabaseClient) Close() error {
 	return d.db.Close()
 }
-

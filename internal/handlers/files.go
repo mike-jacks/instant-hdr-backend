@@ -82,4 +82,3 @@ func (h *FilesHandler) GetFiles(c *gin.Context) {
 
 	c.JSON(http.StatusOK, models.FilesResponse{Files: fileResponses})
 }
-

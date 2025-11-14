@@ -9,4 +9,3 @@ func TestDatabaseClient(t *testing.T) {
 	// Full implementation would require database connection or comprehensive mocking
 	t.Skip("Requires database connection or comprehensive mocking")
 }
-

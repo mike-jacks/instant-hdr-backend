@@ -47,7 +47,7 @@ func (m *Migrator) Run() error {
 		}
 
 		migrationName := entry.Name()
-		
+
 		// Check if migration already applied
 		applied, err := m.isMigrationApplied(migrationName)
 		if err != nil {
@@ -66,7 +66,7 @@ func (m *Migrator) Run() error {
 		}
 
 		log.Printf("Applying migration: %s", migrationName)
-		
+
 		// Execute migration in a transaction
 		tx, err := m.db.Begin()
 		if err != nil {
@@ -123,4 +123,3 @@ func (m *Migrator) isMigrationApplied(name string) (bool, error) {
 func (m *Migrator) Close() error {
 	return m.db.Close()
 }
-

@@ -14,8 +14,8 @@ import (
 )
 
 type UploadHandler struct {
-	imagenClient  *imagen.Client
-	dbClient      *supabase.DatabaseClient
+	imagenClient   *imagen.Client
+	dbClient       *supabase.DatabaseClient
 	realtimeClient *supabase.RealtimeClient
 }
 
@@ -94,7 +94,7 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 	}
 
 	// Publish upload_started event
-	h.realtimeClient.PublishProjectEvent(projectID, "upload_started", 
+	h.realtimeClient.PublishProjectEvent(projectID, "upload_started",
 		supabase.UploadStartedPayload(projectID, len(files)))
 
 	// Update status
@@ -173,4 +173,3 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		Status:    "uploaded",
 	})
 }
-

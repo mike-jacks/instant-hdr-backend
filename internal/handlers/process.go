@@ -126,4 +126,3 @@ func (h *ProcessHandler) Process(c *gin.Context) {
 		EditID:    editID,
 	})
 }
-

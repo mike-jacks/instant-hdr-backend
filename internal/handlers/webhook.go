@@ -119,4 +119,3 @@ func (h *WebhookHandler) verifySignature(signature, url string, body []byte) boo
 
 	return hmac.Equal([]byte(signature), []byte(expectedSignature))
 }
-

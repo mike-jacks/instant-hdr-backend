@@ -21,4 +21,3 @@ func NewClient(cfg *config.Config) (*Client, error) {
 		Config:   cfg,
 	}, nil
 }
-

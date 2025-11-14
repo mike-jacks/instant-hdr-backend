@@ -79,4 +79,3 @@ func TestAuthMiddleware_ValidToken(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 }
-

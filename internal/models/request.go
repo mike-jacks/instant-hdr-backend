@@ -10,11 +10,10 @@ type ProcessRequest struct {
 	HDRMerge   bool     `json:"hdr_merge"`
 	AITools    []string `json:"ai_tools,omitempty"`
 	// Add other Imagen API options as needed
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message,omitempty"`
 }
-

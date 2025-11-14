@@ -21,7 +21,7 @@ func (r *RealtimeClient) PublishEvent(channel string, event string, payload map[
 	// Note: Supabase Go client doesn't have direct Realtime publish
 	// We'll use database updates which trigger Realtime automatically
 	// For explicit events, we can use the Realtime REST API if needed
-	
+
 	// For now, database updates will trigger Realtime automatically
 	// This is a placeholder for future explicit event publishing
 	return nil
@@ -94,4 +94,3 @@ func DownloadReadyPayload(projectID uuid.UUID, storageURLs []string) map[string]
 		"storage_urls": storageURLs,
 	}
 }
-

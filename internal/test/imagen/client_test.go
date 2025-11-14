@@ -33,4 +33,3 @@ func TestClient_RetryWithBackoff_Exhausted(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed after 3 retries")
 }
-

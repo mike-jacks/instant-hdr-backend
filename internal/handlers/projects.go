@@ -13,9 +13,9 @@ import (
 )
 
 type ProjectsHandler struct {
-	imagenClient   *imagen.Client
-	dbClient       *supabase.DatabaseClient
-	storageClient  *supabase.StorageClient
+	imagenClient  *imagen.Client
+	dbClient      *supabase.DatabaseClient
+	storageClient *supabase.StorageClient
 }
 
 func NewProjectsHandler(imagenClient *imagen.Client, dbClient *supabase.DatabaseClient, storageClient *supabase.StorageClient) *ProjectsHandler {
@@ -298,4 +298,3 @@ func (h *ProjectsHandler) DeleteProject(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "project deleted successfully"})
 }
-

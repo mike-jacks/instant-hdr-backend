@@ -253,6 +253,7 @@ WEBHOOK_CALLBACK_URL=https://your-backend-url.com/api/v1/webhooks/imagen
 # Server Configuration
 PORT=8080
 ENVIRONMENT=development
+BASE_URL=http://localhost:8080  # For dev, or https://your-app.railway.app for production
 ```
 
 **Note:** Create a `.env` file in the project root with these variables. See `.env.example` for a template (if available).

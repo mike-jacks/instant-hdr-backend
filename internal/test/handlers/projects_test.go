@@ -9,4 +9,3 @@ func TestProjectsHandler(t *testing.T) {
 	// Full tests would require proper mocking of all dependencies
 	t.Skip("Requires comprehensive mocking setup")
 }
-

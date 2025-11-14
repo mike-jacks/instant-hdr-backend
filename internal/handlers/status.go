@@ -74,4 +74,3 @@ func (h *StatusHandler) GetStatus(c *gin.Context) {
 		UpdatedAt: project.UpdatedAt,
 	})
 }
-

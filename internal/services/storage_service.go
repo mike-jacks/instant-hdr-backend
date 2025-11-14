@@ -36,11 +36,11 @@ func (s *StorageService) HandleProcessingCompleted(imagenProjectUUID, eventID st
 	// Find project by imagen_project_uuid
 	// Note: This requires a new database method or we store the mapping
 	// For now, we'll need to query by imagen_project_uuid
-	
+
 	// Get project from database (we need to add this method)
 	// For now, let's assume we can get it somehow
 	// This is a simplified version - in production, you'd query the database
-	
+
 	// Export from Imagen
 	downloadURL, err := s.imagenClient.Export(imagenProjectUUID)
 	if err != nil {
@@ -65,7 +65,7 @@ func (s *StorageService) HandleProcessingCompleted(imagenProjectUUID, eventID st
 
 	// Generate filename
 	filename := fmt.Sprintf("merged_hdr_%s.jpg", time.Now().Format("20060102_150405"))
-	
+
 	// Upload to Supabase Storage
 	storagePath, storageURL, err := s.storageClient.UploadFile(userID, projectID, filename, fileData)
 	if err != nil {
@@ -121,4 +121,3 @@ func (s *StorageService) getProjectByImagenUUID(imagenUUID string) (*models.Proj
 	}
 	return project, project.UserID, project.ID
 }
-

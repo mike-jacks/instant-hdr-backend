@@ -20,4 +20,3 @@ func HealthHandler(c *gin.Context) {
 		Status: "ok",
 	})
 }
-
