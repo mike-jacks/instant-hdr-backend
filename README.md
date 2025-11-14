@@ -58,10 +58,11 @@ go mod download
    - JWT Secret → `SUPABASE_JWT_SECRET` (for token verification)
 
 **How to get the JWT Secret:**
-   - In your Supabase dashboard, go to **Project Settings** > **API**
-   - Scroll down to the **JWT Settings** section
-   - Copy the **JWT Secret** value (it's a long string)
-   - This secret is used by Supabase to sign JWT tokens, and your backend uses it to verify those tokens
+
+- In your Supabase dashboard, go to **Project Settings** > **API**
+- Scroll down to the **JWT Settings** section
+- Copy the **JWT Secret** value (it's a long string)
+- This secret is used by Supabase to sign JWT tokens, and your backend uses it to verify those tokens
 
 **Note:** The backend uses the publishable key for Supabase client and storage operations. Ensure your storage bucket has appropriate RLS policies configured if needed. The JWT secret is used for verifying authentication tokens from clients.
 
@@ -143,9 +144,18 @@ The iPhone app connects directly to Supabase Realtime (not through this backend)
 
 ### Configuration
 
-The project includes a `railway.json` file with the correct build settings. If you need to configure manually in Railway dashboard:
+The project includes a `Dockerfile` and `railway.json` for deployment. Railway will automatically detect and use the Dockerfile.
 
-**Build Settings:**
+**Docker Build:**
+
+- Multi-stage Docker build for optimized image size
+- Uses Go 1.25 Alpine for building
+- Final image uses minimal Alpine Linux
+- Includes ca-certificates for HTTPS requests
+
+**Alternative (Nixpacks):**
+If you prefer to use Nixpacks instead of Docker, you can update `railway.json`:
+
 - **Build Command**: `go build -o server ./cmd/server`
 - **Start Command**: `./server`
 
@@ -170,6 +180,7 @@ The project includes a `railway.json` file with the correct build settings. If y
 5. Deploy!
 
 Railway will automatically:
+
 - Build the Go application using the correct build command
 - Run migrations on startup (if `DATABASE_URL` is set)
 - Start the server
@@ -177,6 +188,7 @@ Railway will automatically:
 ### Troubleshooting
 
 If you see `package cmd/server/main.go is not in std`:
+
 - Ensure your build command is `go build -o server ./cmd/server` (not `go build cmd/server/main.go`)
 - Check that `railway.json` exists in your project root
 - Verify your `go.mod` file is in the project root
@@ -248,4 +260,3 @@ ENVIRONMENT=development
 ## License
 
 [Your License Here]
-
