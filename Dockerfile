@@ -13,10 +13,8 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Copy source code explicitly to avoid Railway build context issues
-COPY cmd/ ./cmd/
-COPY internal/ ./internal/
-COPY docs/ ./docs/
+# Copy source code
+COPY . .
 
 # Build the application
 RUN go build -o server ./cmd/server
