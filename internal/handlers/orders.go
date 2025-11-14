@@ -63,14 +63,14 @@ func (h *OrdersHandler) CreateOrder(c *gin.Context) {
 		req.Metadata = make(map[string]interface{})
 	}
 
-	// Generate order ID
-	orderID := uuid.New().String()
-
 	// Create AutoEnhance order with retry
+	// Don't pass order_id to AutoEnhance - let them generate it to avoid conflicts
+	// This prevents 409 conflicts if a previous attempt succeeded but we didn't get the response
 	var autoenhanceOrder *autoenhance.OrderOut
 	err = h.autoenhanceClient.RetryWithBackoff(func() error {
 		var err error
-		autoenhanceOrder, err = h.autoenhanceClient.CreateOrder(orderID, "")
+		// Pass empty string for order_id - AutoEnhance will generate one
+		autoenhanceOrder, err = h.autoenhanceClient.CreateOrder("", "")
 		return err
 	}, 3)
 	if err != nil {
@@ -81,7 +81,7 @@ func (h *OrdersHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// Create order in database
+	// Create order in database using our UUID and AutoEnhance's order_id
 	order, err := h.dbClient.CreateOrder(userID, autoenhanceOrder.OrderID, req.Metadata)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
