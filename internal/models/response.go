@@ -3,14 +3,13 @@ package models
 import "time"
 
 type OrderResponse struct {
-	ID                 string                 `json:"order_id"`
-	AutoEnhanceOrderID string                 `json:"autoenhance_order_id"`
-	Status             string                 `json:"status"`
-	Progress           int                    `json:"progress"`
-	Metadata           map[string]interface{} `json:"metadata,omitempty"`
-	ErrorMessage       string                 `json:"error_message,omitempty"`
-	CreatedAt          time.Time              `json:"created_at"`
-	UpdatedAt          time.Time              `json:"updated_at"`
+	ID           string                 `json:"order_id"`
+	Status       string                 `json:"status"`
+	Progress     int                    `json:"progress"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	ErrorMessage string                 `json:"error_message,omitempty"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
 }
 
 type OrderListResponse struct {

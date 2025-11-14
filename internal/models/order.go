@@ -9,15 +9,14 @@ import (
 )
 
 type Order struct {
-	ID                  uuid.UUID
-	UserID              uuid.UUID
-	AutoEnhanceOrderID  string
-	Status              string
-	Progress            int
-	Metadata            json.RawMessage
-	ErrorMessage        sql.NullString
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	ID           uuid.UUID
+	UserID       uuid.UUID
+	Status       string
+	Progress     int
+	Metadata     json.RawMessage
+	ErrorMessage sql.NullString
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 type OrderFile struct {

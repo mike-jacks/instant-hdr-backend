@@ -33,7 +33,7 @@ func NewStorageService(
 }
 
 func (s *StorageService) HandleProcessingCompleted(autoenhanceOrderID, imageID string) {
-	// Get order from database by autoenhance_order_id
+	// Get order from database by order_id (AutoEnhance's order_id is our primary key)
 	order, err := s.dbClient.GetOrderByAutoEnhanceOrderID(autoenhanceOrderID)
 	if err != nil {
 		// Order not found - log and return
@@ -41,7 +41,7 @@ func (s *StorageService) HandleProcessingCompleted(autoenhanceOrderID, imageID s
 	}
 
 	// Get order from AutoEnhance to get list of processed images
-	autoenhanceOrder, err := s.autoenhanceClient.GetOrder(autoenhanceOrderID)
+	autoenhanceOrder, err := s.autoenhanceClient.GetOrder(order.ID.String())
 	if err != nil {
 		s.dbClient.UpdateOrderError(order.ID, fmt.Sprintf("failed to get order from AutoEnhance: %v", err))
 		return
@@ -115,6 +115,7 @@ func (s *StorageService) HandleProcessingCompleted(autoenhanceOrderID, imageID s
 }
 
 func (s *StorageService) HandleProcessingFailed(autoenhanceOrderID, errorMsg string) {
+	// Get order from database by order_id (AutoEnhance's order_id is our primary key)
 	order, err := s.dbClient.GetOrderByAutoEnhanceOrderID(autoenhanceOrderID)
 	if err != nil {
 		// Order not found

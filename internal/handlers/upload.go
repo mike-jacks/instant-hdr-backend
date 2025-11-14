@@ -154,7 +154,7 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 			var err error
 			bracket, err = h.autoenhanceClient.CreateBracket(autoenhance.BracketIn{
 				Name:    file.Filename,
-				OrderID: order.AutoEnhanceOrderID,
+				OrderID: order.ID.String(),
 			})
 			return err
 		}, 3)

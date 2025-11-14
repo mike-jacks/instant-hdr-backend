@@ -59,8 +59,6 @@ definitions:
     type: object
   models.OrderResponse:
     properties:
-      autoenhance_order_id:
-        type: string
       created_at:
         type: string
       error_message:

@@ -27,16 +27,16 @@ func NewDatabaseClient(connectionString string) (*DatabaseClient, error) {
 	return &DatabaseClient{db: db}, nil
 }
 
-func (d *DatabaseClient) CreateOrder(userID uuid.UUID, autoenhanceOrderID string, metadata map[string]interface{}) (*models.Order, error) {
+func (d *DatabaseClient) CreateOrder(orderID, userID uuid.UUID, metadata map[string]interface{}) (*models.Order, error) {
 	metadataJSON, _ := json.Marshal(metadata)
 
 	var order models.Order
 	err := d.db.QueryRow(`
-		INSERT INTO orders (user_id, autoenhance_order_id, status, metadata)
+		INSERT INTO orders (id, user_id, status, metadata)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, user_id, autoenhance_order_id, status, progress, metadata, error_message, created_at, updated_at
-	`, userID, autoenhanceOrderID, "created", metadataJSON).Scan(
-		&order.ID, &order.UserID, &order.AutoEnhanceOrderID, &order.Status,
+		RETURNING id, user_id, status, progress, metadata, error_message, created_at, updated_at
+	`, orderID, userID, "created", metadataJSON).Scan(
+		&order.ID, &order.UserID, &order.Status,
 		&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
 	)
 	if err != nil {
@@ -49,11 +49,11 @@ func (d *DatabaseClient) CreateOrder(userID uuid.UUID, autoenhanceOrderID string
 func (d *DatabaseClient) GetOrder(orderID, userID uuid.UUID) (*models.Order, error) {
 	var order models.Order
 	err := d.db.QueryRow(`
-		SELECT id, user_id, autoenhance_order_id, status, progress, metadata, error_message, created_at, updated_at
+		SELECT id, user_id, status, progress, metadata, error_message, created_at, updated_at
 		FROM orders
 		WHERE id = $1 AND user_id = $2
 	`, orderID, userID).Scan(
-		&order.ID, &order.UserID, &order.AutoEnhanceOrderID, &order.Status,
+		&order.ID, &order.UserID, &order.Status,
 		&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
 	)
 	if err != nil {
@@ -65,7 +65,7 @@ func (d *DatabaseClient) GetOrder(orderID, userID uuid.UUID) (*models.Order, err
 
 func (d *DatabaseClient) ListOrders(userID uuid.UUID) ([]models.Order, error) {
 	rows, err := d.db.Query(`
-		SELECT id, user_id, autoenhance_order_id, status, progress, metadata, error_message, created_at, updated_at
+		SELECT id, user_id, status, progress, metadata, error_message, created_at, updated_at
 		FROM orders
 		WHERE user_id = $1
 		ORDER BY created_at DESC
@@ -79,7 +79,7 @@ func (d *DatabaseClient) ListOrders(userID uuid.UUID) ([]models.Order, error) {
 	for rows.Next() {
 		var order models.Order
 		err := rows.Scan(
-			&order.ID, &order.UserID, &order.AutoEnhanceOrderID, &order.Status,
+			&order.ID, &order.UserID, &order.Status,
 			&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
 		)
 		if err != nil {
@@ -118,13 +118,20 @@ func (d *DatabaseClient) DeleteOrder(orderID, userID uuid.UUID) error {
 }
 
 func (d *DatabaseClient) GetOrderByAutoEnhanceOrderID(autoenhanceOrderID string) (*models.Order, error) {
+	// Parse the order_id string as UUID and query by id
+	orderID, err := uuid.Parse(autoenhanceOrderID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid order id: %w", err)
+	}
+	
+	// Query by id (no userID check since this is used for webhooks)
 	var order models.Order
-	err := d.db.QueryRow(`
-		SELECT id, user_id, autoenhance_order_id, status, progress, metadata, error_message, created_at, updated_at
+	err = d.db.QueryRow(`
+		SELECT id, user_id, status, progress, metadata, error_message, created_at, updated_at
 		FROM orders
-		WHERE autoenhance_order_id = $1
-	`, autoenhanceOrderID).Scan(
-		&order.ID, &order.UserID, &order.AutoEnhanceOrderID, &order.Status,
+		WHERE id = $1
+	`, orderID).Scan(
+		&order.ID, &order.UserID, &order.Status,
 		&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
 	)
 	if err != nil {

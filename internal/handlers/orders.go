@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -63,13 +64,12 @@ func (h *OrdersHandler) CreateOrder(c *gin.Context) {
 		req.Metadata = make(map[string]interface{})
 	}
 
-	// Create AutoEnhance order with retry
-	// Don't pass order_id to AutoEnhance - let them generate it to avoid conflicts
-	// This prevents 409 conflicts if a previous attempt succeeded but we didn't get the response
+	// Create AutoEnhance order - let them generate the order_id
+	// We'll use that order_id as our primary key
 	var autoenhanceOrder *autoenhance.OrderOut
 	err = h.autoenhanceClient.RetryWithBackoff(func() error {
 		var err error
-		// Pass empty string for order_id - AutoEnhance will generate one
+		// Don't pass order_id - let AutoEnhance generate it
 		autoenhanceOrder, err = h.autoenhanceClient.CreateOrder("", "")
 		return err
 	}, 3)
@@ -81,8 +81,18 @@ func (h *OrdersHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// Create order in database using our UUID and AutoEnhance's order_id
-	order, err := h.dbClient.CreateOrder(userID, autoenhanceOrder.OrderID, req.Metadata)
+	// Parse AutoEnhance's order_id as UUID (it should be a UUID string)
+	orderID, err := uuid.Parse(autoenhanceOrder.OrderID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "invalid order id from AutoEnhance",
+			Message: fmt.Sprintf("AutoEnhance returned invalid UUID: %s", autoenhanceOrder.OrderID),
+		})
+		return
+	}
+
+	// Create order in database using AutoEnhance's generated order_id as our primary key
+	order, err := h.dbClient.CreateOrder(orderID, userID, req.Metadata)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "failed to create order",
@@ -97,13 +107,12 @@ func (h *OrdersHandler) CreateOrder(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, models.OrderResponse{
-		ID:                 order.ID.String(),
-		AutoEnhanceOrderID: order.AutoEnhanceOrderID,
-		Status:             order.Status,
-		Progress:           order.Progress,
-		Metadata:           metadata,
-		CreatedAt:          order.CreatedAt,
-		UpdatedAt:          order.UpdatedAt,
+		ID:        order.ID.String(),
+		Status:    order.Status,
+		Progress:  order.Progress,
+		Metadata:  metadata,
+		CreatedAt: order.CreatedAt,
+		UpdatedAt: order.UpdatedAt,
 	})
 }
 
@@ -212,13 +221,12 @@ func (h *OrdersHandler) GetOrder(c *gin.Context) {
 	}
 
 	response := models.OrderResponse{
-		ID:                 order.ID.String(),
-		AutoEnhanceOrderID: order.AutoEnhanceOrderID,
-		Status:             order.Status,
-		Progress:          order.Progress,
-		Metadata:           metadata,
-		CreatedAt:          order.CreatedAt,
-		UpdatedAt:          order.UpdatedAt,
+		ID:        order.ID.String(),
+		Status:    order.Status,
+		Progress:  order.Progress,
+		Metadata:  metadata,
+		CreatedAt: order.CreatedAt,
+		UpdatedAt: order.UpdatedAt,
 	}
 
 	if order.ErrorMessage.Valid {
@@ -267,8 +275,8 @@ func (h *OrdersHandler) DeleteOrder(c *gin.Context) {
 		return
 	}
 
-	// Get order to get autoenhance_order_id
-	order, err := h.dbClient.GetOrder(orderID, userID)
+	// Verify order exists
+	_, err = h.dbClient.GetOrder(orderID, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{
 			Error:   "order not found",
@@ -277,9 +285,9 @@ func (h *OrdersHandler) DeleteOrder(c *gin.Context) {
 		return
 	}
 
-	// Delete from AutoEnhance with retry
+	// Delete from AutoEnhance with retry - use the same order_id
 	err = h.autoenhanceClient.RetryWithBackoff(func() error {
-		return h.autoenhanceClient.DeleteOrder(order.AutoEnhanceOrderID)
+		return h.autoenhanceClient.DeleteOrder(orderID.String())
 	}, 3)
 	if err != nil {
 		// Log error but continue with database deletion

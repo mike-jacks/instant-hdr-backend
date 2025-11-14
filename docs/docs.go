@@ -643,9 +643,6 @@ const docTemplate = `{
         "models.OrderResponse": {
             "type": "object",
             "properties": {
-                "autoenhance_order_id": {
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },

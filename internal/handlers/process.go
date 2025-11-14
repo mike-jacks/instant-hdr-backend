@@ -164,7 +164,7 @@ func (h *ProcessHandler) Process(c *gin.Context) {
 
 	// Initiate processing with retry
 	err = h.autoenhanceClient.RetryWithBackoff(func() error {
-		_, err := h.autoenhanceClient.ProcessOrder(order.AutoEnhanceOrderID, processReq)
+		_, err := h.autoenhanceClient.ProcessOrder(order.ID.String(), processReq)
 		return err
 	}, 3)
 	if err != nil {
