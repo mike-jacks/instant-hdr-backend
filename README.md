@@ -141,16 +141,45 @@ The iPhone app connects directly to Supabase Realtime (not through this backend)
 
 ## Deployment to Railway.app
 
+### Configuration
+
+The project includes a `railway.json` file with the correct build settings. If you need to configure manually in Railway dashboard:
+
+**Build Settings:**
+- **Build Command**: `go build -o server ./cmd/server`
+- **Start Command**: `./server`
+
+**Important:** Do NOT use `go build cmd/server/main.go` - this will fail. Use `go build ./cmd/server` or `go build -o server ./cmd/server`.
+
+### Deployment Steps
+
 1. Create a new Railway project
 2. Connect your GitHub repository
-3. Add all environment variables from `.env.example`
-4. Set `PORT` environment variable (Railway provides this automatically)
+3. Add all environment variables from `.env.example`:
+   - `IMAGEN_API_KEY`
+   - `IMAGEN_API_BASE_URL`
+   - `IMAGEN_WEBHOOK_SECRET`
+   - `SUPABASE_URL`
+   - `SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_JWT_SECRET`
+   - `SUPABASE_STORAGE_BUCKET`
+   - `DATABASE_URL`
+   - `WEBHOOK_CALLBACK_URL`
+   - `ENVIRONMENT=production`
+4. Railway automatically sets `PORT` - your app will use it via `os.Getenv("PORT")`
 5. Deploy!
 
 Railway will automatically:
-- Build the Go application
-- Run migrations on startup
+- Build the Go application using the correct build command
+- Run migrations on startup (if `DATABASE_URL` is set)
 - Start the server
+
+### Troubleshooting
+
+If you see `package cmd/server/main.go is not in std`:
+- Ensure your build command is `go build -o server ./cmd/server` (not `go build cmd/server/main.go`)
+- Check that `railway.json` exists in your project root
+- Verify your `go.mod` file is in the project root
 
 ## Testing
 
