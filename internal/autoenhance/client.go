@@ -511,15 +511,60 @@ func (c *Client) DeleteBracket(bracketID string) error {
 }
 
 // UploadFile uploads a file to the provided upload URL
-func (c *Client) UploadFile(uploadURL string, data []byte) error {
+// According to AutoEnhance.ai docs: https://docs.autoenhance.ai/
+// The Content-Type header should be set to "application/octet-stream"
+func (c *Client) UploadFile(uploadURL string, data []byte, mimeType string) error {
+	// Parse the URL to extract headers that are part of the signature
+	parsedURL, err := url.Parse(uploadURL)
+	if err != nil {
+		return fmt.Errorf("failed to parse upload URL: %w", err)
+	}
+
+	// Create request with body
 	req, err := http.NewRequest("PUT", uploadURL, bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// According to AutoEnhance.ai documentation, set Content-Type to application/octet-stream
+	// https://docs.autoenhance.ai/ - "Set the Content-Type to application/octet-stream during the upload"
 	req.Header.Set("Content-Type", "application/octet-stream")
 
-	resp, err := c.httpClient.Do(req)
+	// Extract headers from query parameters that are part of the signature
+	// S3 pre-signed URLs include x-amz-* headers in query params, but they must
+	// also be present as request headers for the signature to match
+	query := parsedURL.Query()
+	
+	// Extract x-amz-meta-bracket_id if present (URL decode it)
+	if bracketID := query.Get("x-amz-meta-bracket_id"); bracketID != "" {
+		decoded, err := url.QueryUnescape(bracketID)
+		if err == nil {
+			req.Header.Set("x-amz-meta-bracket_id", decoded)
+		} else {
+			req.Header.Set("x-amz-meta-bracket_id", bracketID)
+		}
+	}
+	
+	// Extract x-amz-security-token if present (URL decode it)
+	if securityToken := query.Get("x-amz-security-token"); securityToken != "" {
+		decoded, err := url.QueryUnescape(securityToken)
+		if err == nil {
+			req.Header.Set("x-amz-security-token", decoded)
+		} else {
+			req.Header.Set("x-amz-security-token", securityToken)
+		}
+	}
+
+	// Remove any headers that Go might add automatically
+	req.Header.Del("User-Agent")
+	req.Header.Del("Accept-Encoding")
+
+	// Use a custom client
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
 	}

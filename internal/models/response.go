@@ -28,6 +28,7 @@ type UploadResponse struct {
 	OrderID string     `json:"order_id"`
 	Files   []FileInfo `json:"files"`
 	Status  string     `json:"status"`
+	Errors  []string   `json:"errors,omitempty"`
 }
 
 type FileInfo struct {

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -148,6 +149,19 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 			continue
 		}
 
+		// Detect MIME type from file extension
+		mimeType := "image/jpeg" // Default
+		if len(file.Filename) > 0 {
+			ext := file.Filename[len(file.Filename)-4:]
+			if ext == ".png" || ext == "PNG" {
+				mimeType = "image/png"
+			} else if ext == ".heic" || ext == "HEIC" {
+				mimeType = "image/heic"
+			} else if ext == ".cr2" || ext == "CR2" {
+				mimeType = "image/x-canon-cr2"
+			}
+		}
+
 		// Create bracket in AutoEnhance
 		var bracket *autoenhance.BracketCreatedOut
 		err = h.autoenhanceClient.RetryWithBackoff(func() error {
@@ -163,28 +177,52 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 			continue
 		}
 
-		// Upload to bracket upload URL
-		err = h.autoenhanceClient.RetryWithBackoff(func() error {
-			return h.autoenhanceClient.UploadFile(bracket.UploadURL, data)
-		}, 3)
-		if err != nil {
-			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to upload: %v", file.Filename, err))
+		// Check if upload URL is provided
+		if bracket.UploadURL == "" {
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: no upload URL provided by AutoEnhance", file.Filename))
 			continue
 		}
 
+		// Upload to bracket upload URL
+		err = h.autoenhanceClient.RetryWithBackoff(func() error {
+			return h.autoenhanceClient.UploadFile(bracket.UploadURL, data, mimeType)
+		}, 3)
+		if err != nil {
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to upload to AutoEnhance: %v", file.Filename, err))
+			continue
+		}
+
+		// Note: We don't verify is_uploaded immediately because AutoEnhance processes
+		// uploads asynchronously. The HTTP upload request succeeding (200/204) is sufficient
+		// to confirm the file was received. The is_uploaded flag will be updated by AutoEnhance
+		// after they process the file, and we can check it later if needed.
+
 		// Store bracket in database
+		// Mark as uploaded since the HTTP request succeeded (200/204)
+		// AutoEnhance will update the status asynchronously
 		bracketModel := &models.Bracket{
 			ID:         uuid.New(),
 			OrderID:    orderID,
 			BracketID:  bracket.BracketID,
 			Filename:   file.Filename,
-			IsUploaded: true,
+			IsUploaded: true, // HTTP upload succeeded, so mark as uploaded
+			Metadata:   json.RawMessage("{}"), // Initialize with empty JSON object
 		}
 		if bracket.UploadURL != "" {
 			bracketModel.UploadURL = sql.NullString{String: bracket.UploadURL, Valid: true}
 		}
+		if bracket.ImageID != "" {
+			bracketModel.ImageID = sql.NullString{String: bracket.ImageID, Valid: true}
+		}
+		// If bracket has metadata from AutoEnhance, use it
+		if bracket.Metadata != nil && len(bracket.Metadata) > 0 {
+			if metadataBytes, err := json.Marshal(bracket.Metadata); err == nil {
+				bracketModel.Metadata = json.RawMessage(metadataBytes)
+			}
+		}
 		if err := h.dbClient.CreateBracket(bracketModel); err != nil {
-			// Log error but continue
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to save bracket to database: %v", file.Filename, err))
+			// Continue anyway since the upload succeeded
 		}
 
 		uploadedFiles = append(uploadedFiles, models.FileInfo{
@@ -213,9 +251,18 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 	h.realtimeClient.PublishOrderEvent(orderID, "upload_completed",
 		supabase.UploadCompletedPayload(orderID, len(uploadedFiles)))
 
-	c.JSON(http.StatusOK, models.UploadResponse{
+	// Include errors in response if any files failed
+	response := models.UploadResponse{
 		OrderID: orderID.String(),
 		Files:   uploadedFiles,
 		Status:  "uploaded",
-	})
+	}
+	if len(uploadErrors) > 0 {
+		response.Errors = uploadErrors
+		// Also log to database
+		errorMsg := fmt.Sprintf("Some files failed to upload: %v", uploadErrors)
+		h.dbClient.UpdateOrderError(orderID, errorMsg)
+	}
+
+	c.JSON(http.StatusOK, response)
 }
