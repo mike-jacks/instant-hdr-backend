@@ -256,6 +256,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/orders/{order_id}/brackets": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns a list of all uploaded brackets (raw images) for an order",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "brackets"
+                ],
+                "summary": "Get uploaded brackets",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.BracketsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/orders/{order_id}/files": {
             "get": {
                 "security": [
@@ -552,6 +607,37 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "models.BracketResponse": {
+            "type": "object",
+            "properties": {
+                "bracket_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_uploaded": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.BracketsResponse": {
+            "type": "object",
+            "properties": {
+                "brackets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.BracketResponse"
+                    }
+                }
+            }
+        },
         "models.CreateOrderRequest": {
             "type": "object",
             "properties": {

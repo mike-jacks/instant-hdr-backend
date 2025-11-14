@@ -51,6 +51,18 @@ type FilesResponse struct {
 	Files []FileResponse `json:"files"`
 }
 
+type BracketsResponse struct {
+	Brackets []BracketResponse `json:"brackets"`
+}
+
+type BracketResponse struct {
+	ID         string    `json:"id"`
+	BracketID  string    `json:"bracket_id"`
+	Filename   string    `json:"filename"`
+	IsUploaded bool      `json:"is_uploaded"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 type FileResponse struct {
 	ID         string    `json:"id"`
 	Filename   string    `json:"filename"`

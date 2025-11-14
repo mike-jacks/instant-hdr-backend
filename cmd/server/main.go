@@ -174,7 +174,8 @@ func main() {
 
 	// Status and files
 	api.GET("/orders/:order_id/status", statusHandler.GetStatus)
-	api.GET("/orders/:order_id/files", filesHandler.GetFiles)
+	api.GET("/orders/:order_id/files", filesHandler.GetFiles) // Processed files only
+	api.GET("/orders/:order_id/brackets", filesHandler.GetBrackets) // Uploaded brackets
 
 	// Webhook (no auth, uses token authentication)
 	router.POST("/api/v1/webhooks/autoenhance", webhookHandler.HandleWebhook)
