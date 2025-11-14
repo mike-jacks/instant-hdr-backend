@@ -26,7 +26,9 @@ go.work.sum
 
 # env file
 .env
-server
+
+# Compiled binary (root level only - use /server to anchor to root)
+/server
 
 # Editor/IDE
 # .idea/
