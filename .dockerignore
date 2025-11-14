@@ -1,8 +1,9 @@
 # Git
 .git
 .gitignore
+.gitattributes
 
-# Documentation
+# Documentation (optional - can include if you want)
 README.md
 *.md
 
@@ -11,30 +12,34 @@ README.md
 .idea
 *.swp
 *.swo
+*.sublime-*
 
-# Build artifacts
+# Build artifacts (exclude compiled binaries)
 server
 *.exe
 *.dll
 *.so
 *.dylib
+__debug_bin*
 
-# Test files
+# Test files and coverage (not needed for build)
 *_test.go
 coverage.*
+*.out
+*.coverprofile
+profile.cov
 
-# Environment files
+# Environment files (should use Railway env vars)
 .env
 .env.local
 .env.*.local
 
-# Debug binaries
-__debug_bin*
-
-# OS
+# OS files
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
 
-# Railway
-railway.json
+# Railway config (optional - can include if needed)
+# railway.json
 
