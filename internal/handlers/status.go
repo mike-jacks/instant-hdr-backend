@@ -20,6 +20,19 @@ func NewStatusHandler(dbClient *supabase.DatabaseClient) *StatusHandler {
 	}
 }
 
+// GetStatus godoc
+// @Summary     Get project status
+// @Description Returns the current status and progress of a project. For real-time updates, connect to Supabase Realtime.
+// @Tags        status
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       project_id path string true "Project ID (UUID)"
+// @Success     200 {object} models.StatusResponse
+// @Failure     400 {object} models.ErrorResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Failure     404 {object} models.ErrorResponse
+// @Router      /projects/{project_id}/status [get]
 func (h *StatusHandler) GetStatus(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})

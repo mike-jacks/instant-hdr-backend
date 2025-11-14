@@ -20,6 +20,19 @@ func NewFilesHandler(dbClient *supabase.DatabaseClient) *FilesHandler {
 	}
 }
 
+// GetFiles godoc
+// @Summary     Get project files
+// @Description Returns a list of all processed files associated with a project, including their Supabase Storage URLs
+// @Tags        files
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       project_id path string true "Project ID (UUID)"
+// @Success     200 {object} models.FilesResponse
+// @Failure     400 {object} models.ErrorResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Failure     500 {object} models.ErrorResponse
+// @Router      /projects/{project_id}/files [get]
 func (h *FilesHandler) GetFiles(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})

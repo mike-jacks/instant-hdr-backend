@@ -26,6 +26,19 @@ func NewProjectsHandler(imagenClient *imagen.Client, dbClient *supabase.Database
 	}
 }
 
+// CreateProject godoc
+// @Summary     Create a new project
+// @Description Creates a new Imagen AI project for a listing (real estate shoot). Returns the project ID and Imagen project UUID.
+// @Tags        projects
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       request body models.CreateProjectRequest false "Project metadata (optional)"
+// @Success     200 {object} models.ProjectResponse
+// @Failure     400 {object} models.ErrorResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Failure     500 {object} models.ErrorResponse
+// @Router      /projects [post]
 func (h *ProjectsHandler) CreateProject(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})
@@ -85,6 +98,17 @@ func (h *ProjectsHandler) CreateProject(c *gin.Context) {
 	})
 }
 
+// ListProjects godoc
+// @Summary     List all projects
+// @Description Returns a list of all projects for the authenticated user
+// @Tags        projects
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Success     200 {object} models.ProjectListResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Failure     500 {object} models.ErrorResponse
+// @Router      /projects [get]
 func (h *ProjectsHandler) ListProjects(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})
@@ -126,6 +150,19 @@ func (h *ProjectsHandler) ListProjects(c *gin.Context) {
 	c.JSON(http.StatusOK, models.ProjectListResponse{Projects: summaries})
 }
 
+// GetProject godoc
+// @Summary     Get project details
+// @Description Returns detailed information about a specific project
+// @Tags        projects
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       project_id path string true "Project ID (UUID)"
+// @Success     200 {object} models.ProjectResponse
+// @Failure     400 {object} models.ErrorResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Failure     404 {object} models.ErrorResponse
+// @Router      /projects/{project_id} [get]
 func (h *ProjectsHandler) GetProject(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})
@@ -188,6 +225,20 @@ func (h *ProjectsHandler) GetProject(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// DeleteProject godoc
+// @Summary     Delete a project
+// @Description Deletes a project, including associated Imagen AI project and files from Supabase Storage
+// @Tags        projects
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       project_id path string true "Project ID (UUID)"
+// @Success     200 {object} map[string]string "message"
+// @Failure     400 {object} models.ErrorResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Failure     404 {object} models.ErrorResponse
+// @Failure     500 {object} models.ErrorResponse
+// @Router      /projects/{project_id} [delete]
 func (h *ProjectsHandler) DeleteProject(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})

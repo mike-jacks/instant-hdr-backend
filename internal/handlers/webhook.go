@@ -36,6 +36,18 @@ type WebhookEvent struct {
 	Message string   `xml:"message,omitempty"`
 }
 
+// HandleWebhook godoc
+// @Summary     Imagen AI webhook endpoint
+// @Description Receives webhook callbacks from Imagen AI for processing status updates. Supports challenge parameter for webhook setup. Uses HMAC-SHA256 signature verification.
+// @Tags        webhooks
+// @Accept      xml
+// @Produce     json
+// @Param       challenge query string false "Challenge string for webhook verification"
+// @Param       X-Imagen-Webhook header string true "HMAC-SHA256 signature"
+// @Success     200 {object} map[string]string "status"
+// @Failure     400 {object} models.ErrorResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Router      /webhooks/imagen [post]
 func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 	// Handle challenge parameter for webhook setup
 	challenge := c.Query("challenge")

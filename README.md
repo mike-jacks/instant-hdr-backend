@@ -87,6 +87,22 @@ go run cmd/server/main.go
 
 The server will start on port 8080 (or the port specified in `PORT` environment variable).
 
+## API Documentation
+
+Interactive API documentation is available via Swagger UI when the server is running:
+
+- **Swagger UI**: `http://localhost:8080/swagger/index.html`
+
+The documentation is auto-generated from code annotations. To regenerate after making changes:
+
+```bash
+# Install swag CLI (if not already installed)
+go install github.com/swaggo/swag/cmd/swag@latest
+
+# Generate documentation
+swag init -g cmd/server/main.go -o docs
+```
+
 ## API Endpoints
 
 All endpoints (except `/health` and `/api/v1/webhooks/imagen`) require JWT authentication via `Authorization: Bearer <token>` header.

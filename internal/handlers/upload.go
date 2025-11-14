@@ -27,6 +27,21 @@ func NewUploadHandler(imagenClient *imagen.Client, dbClient *supabase.DatabaseCl
 	}
 }
 
+// Upload godoc
+// @Summary     Upload images to project
+// @Description Uploads multiple bracketed images to an Imagen AI project. All images in a single upload are expected to be bracketed images of the same shot.
+// @Tags        upload
+// @Accept      multipart/form-data
+// @Produce     json
+// @Security    Bearer
+// @Param       project_id path string true "Project ID (UUID)"
+// @Param       images formData file true "Bracketed images (multiple files allowed)"
+// @Success     200 {object} models.UploadResponse
+// @Failure     400 {object} models.ErrorResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Failure     404 {object} models.ErrorResponse
+// @Failure     500 {object} models.ErrorResponse
+// @Router      /projects/{project_id}/upload [post]
 func (h *UploadHandler) Upload(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})

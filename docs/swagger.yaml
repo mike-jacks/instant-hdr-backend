@@ -1,0 +1,515 @@
+basePath: /api/v1
+definitions:
+  models.CreateProjectRequest:
+    properties:
+      metadata:
+        additionalProperties: true
+        description: Optional metadata to store with project
+        type: object
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+      message:
+        type: string
+    type: object
+  models.FileInfo:
+    properties:
+      filename:
+        type: string
+      size:
+        type: integer
+    type: object
+  models.FileResponse:
+    properties:
+      created_at:
+        type: string
+      file_size:
+        type: integer
+      filename:
+        type: string
+      id:
+        type: string
+      is_final:
+        type: boolean
+      mime_type:
+        type: string
+      storage_url:
+        type: string
+    type: object
+  models.FilesResponse:
+    properties:
+      files:
+        items:
+          $ref: '#/definitions/models.FileResponse'
+        type: array
+    type: object
+  models.HealthResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  models.ProcessRequest:
+    properties:
+      ai_tools:
+        items:
+          type: string
+        type: array
+      hdr_merge:
+        type: boolean
+      metadata:
+        additionalProperties: true
+        description: Add other Imagen API options as needed
+        type: object
+      profile_key:
+        type: string
+    type: object
+  models.ProcessResponse:
+    properties:
+      edit_id:
+        type: string
+      project_id:
+        type: string
+      status:
+        type: string
+    type: object
+  models.ProjectListResponse:
+    properties:
+      projects:
+        items:
+          $ref: '#/definitions/models.ProjectSummary'
+        type: array
+    type: object
+  models.ProjectResponse:
+    properties:
+      created_at:
+        type: string
+      edit_id:
+        type: string
+      error_message:
+        type: string
+      imagen_project_uuid:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      profile_key:
+        type: string
+      progress:
+        type: integer
+      project_id:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.ProjectSummary:
+    properties:
+      created_at:
+        type: string
+      progress:
+        type: integer
+      project_id:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.StatusResponse:
+    properties:
+      progress:
+        type: integer
+      project_id:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.UploadResponse:
+    properties:
+      files:
+        items:
+          $ref: '#/definitions/models.FileInfo'
+        type: array
+      project_id:
+        type: string
+      status:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: Backend API for processing bracketed images with Imagen AI HDR merging.
+    This API handles project creation, image uploads, HDR processing, and real-time
+    status updates via Supabase Realtime.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Instant HDR Backend API
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Returns the health status of the API
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.HealthResponse'
+      summary: Health check
+      tags:
+      - health
+  /projects:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all projects for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProjectListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List all projects
+      tags:
+      - projects
+    post:
+      consumes:
+      - application/json
+      description: Creates a new Imagen AI project for a listing (real estate shoot).
+        Returns the project ID and Imagen project UUID.
+      parameters:
+      - description: Project metadata (optional)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/models.CreateProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a new project
+      tags:
+      - projects
+  /projects/{project_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a project, including associated Imagen AI project and files
+        from Supabase Storage
+      parameters:
+      - description: Project ID (UUID)
+        in: path
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete a project
+      tags:
+      - projects
+    get:
+      consumes:
+      - application/json
+      description: Returns detailed information about a specific project
+      parameters:
+      - description: Project ID (UUID)
+        in: path
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get project details
+      tags:
+      - projects
+  /projects/{project_id}/files:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all processed files associated with a project,
+        including their Supabase Storage URLs
+      parameters:
+      - description: Project ID (UUID)
+        in: path
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.FilesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get project files
+      tags:
+      - files
+  /projects/{project_id}/process:
+    post:
+      consumes:
+      - application/json
+      description: Initiates HDR processing and merging of uploaded images using Imagen
+        AI. Automatically enables JPEG export.
+      parameters:
+      - description: Project ID (UUID)
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - description: Processing options
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ProcessRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProcessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Process images with HDR merge
+      tags:
+      - process
+  /projects/{project_id}/status:
+    get:
+      consumes:
+      - application/json
+      description: Returns the current status and progress of a project. For real-time
+        updates, connect to Supabase Realtime.
+      parameters:
+      - description: Project ID (UUID)
+        in: path
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.StatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get project status
+      tags:
+      - status
+  /projects/{project_id}/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads multiple bracketed images to an Imagen AI project. All
+        images in a single upload are expected to be bracketed images of the same
+        shot.
+      parameters:
+      - description: Project ID (UUID)
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - description: Bracketed images (multiple files allowed)
+        in: formData
+        name: images
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Upload images to project
+      tags:
+      - upload
+  /webhooks/imagen:
+    post:
+      consumes:
+      - text/xml
+      description: Receives webhook callbacks from Imagen AI for processing status
+        updates. Supports challenge parameter for webhook setup. Uses HMAC-SHA256
+        signature verification.
+      parameters:
+      - description: Challenge string for webhook verification
+        in: query
+        name: challenge
+        type: string
+      - description: HMAC-SHA256 signature
+        in: header
+        name: X-Imagen-Webhook
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Imagen AI webhook endpoint
+      tags:
+      - webhooks
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

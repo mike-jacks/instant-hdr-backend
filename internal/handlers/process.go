@@ -27,6 +27,21 @@ func NewProcessHandler(imagenClient *imagen.Client, dbClient *supabase.DatabaseC
 	}
 }
 
+// Process godoc
+// @Summary     Process images with HDR merge
+// @Description Initiates HDR processing and merging of uploaded images using Imagen AI. Automatically enables JPEG export.
+// @Tags        process
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       project_id path string true "Project ID (UUID)"
+// @Param       request body models.ProcessRequest true "Processing options"
+// @Success     200 {object} models.ProcessResponse
+// @Failure     400 {object} models.ErrorResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Failure     404 {object} models.ErrorResponse
+// @Failure     500 {object} models.ErrorResponse
+// @Router      /projects/{project_id}/process [post]
 func (h *ProcessHandler) Process(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})
