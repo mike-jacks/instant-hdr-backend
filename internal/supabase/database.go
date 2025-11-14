@@ -27,135 +27,140 @@ func NewDatabaseClient(connectionString string) (*DatabaseClient, error) {
 	return &DatabaseClient{db: db}, nil
 }
 
-func (d *DatabaseClient) CreateProject(userID uuid.UUID, imagenProjectUUID string, metadata map[string]interface{}) (*models.Project, error) {
+func (d *DatabaseClient) CreateOrder(userID uuid.UUID, autoenhanceOrderID string, metadata map[string]interface{}) (*models.Order, error) {
 	metadataJSON, _ := json.Marshal(metadata)
 
-	var project models.Project
+	var order models.Order
 	err := d.db.QueryRow(`
-		INSERT INTO projects (user_id, imagen_project_uuid, status, metadata)
+		INSERT INTO orders (user_id, autoenhance_order_id, status, metadata)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, user_id, imagen_project_uuid, status, progress, profile_key, edit_id, metadata, error_message, created_at, updated_at
-	`, userID, imagenProjectUUID, "created", metadataJSON).Scan(
-		&project.ID, &project.UserID, &project.ImagenProjectUUID, &project.Status,
-		&project.Progress, &project.ProfileKey, &project.EditID, &project.Metadata,
-		&project.ErrorMessage, &project.CreatedAt, &project.UpdatedAt,
+		RETURNING id, user_id, autoenhance_order_id, status, progress, metadata, error_message, created_at, updated_at
+	`, userID, autoenhanceOrderID, "created", metadataJSON).Scan(
+		&order.ID, &order.UserID, &order.AutoEnhanceOrderID, &order.Status,
+		&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create project: %w", err)
+		return nil, fmt.Errorf("failed to create order: %w", err)
 	}
 
-	return &project, nil
+	return &order, nil
 }
 
-func (d *DatabaseClient) GetProject(projectID, userID uuid.UUID) (*models.Project, error) {
-	var project models.Project
+func (d *DatabaseClient) GetOrder(orderID, userID uuid.UUID) (*models.Order, error) {
+	var order models.Order
 	err := d.db.QueryRow(`
-		SELECT id, user_id, imagen_project_uuid, status, progress, profile_key, edit_id, metadata, error_message, created_at, updated_at
-		FROM projects
+		SELECT id, user_id, autoenhance_order_id, status, progress, metadata, error_message, created_at, updated_at
+		FROM orders
 		WHERE id = $1 AND user_id = $2
-	`, projectID, userID).Scan(
-		&project.ID, &project.UserID, &project.ImagenProjectUUID, &project.Status,
-		&project.Progress, &project.ProfileKey, &project.EditID, &project.Metadata,
-		&project.ErrorMessage, &project.CreatedAt, &project.UpdatedAt,
+	`, orderID, userID).Scan(
+		&order.ID, &order.UserID, &order.AutoEnhanceOrderID, &order.Status,
+		&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get project: %w", err)
+		return nil, fmt.Errorf("failed to get order: %w", err)
 	}
 
-	return &project, nil
+	return &order, nil
 }
 
-func (d *DatabaseClient) ListProjects(userID uuid.UUID) ([]models.Project, error) {
+func (d *DatabaseClient) ListOrders(userID uuid.UUID) ([]models.Order, error) {
 	rows, err := d.db.Query(`
-		SELECT id, user_id, imagen_project_uuid, status, progress, profile_key, edit_id, metadata, error_message, created_at, updated_at
-		FROM projects
+		SELECT id, user_id, autoenhance_order_id, status, progress, metadata, error_message, created_at, updated_at
+		FROM orders
 		WHERE user_id = $1
 		ORDER BY created_at DESC
 	`, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list projects: %w", err)
+		return nil, fmt.Errorf("failed to list orders: %w", err)
 	}
 	defer rows.Close()
 
-	var projects []models.Project
+	var orders []models.Order
 	for rows.Next() {
-		var project models.Project
+		var order models.Order
 		err := rows.Scan(
-			&project.ID, &project.UserID, &project.ImagenProjectUUID, &project.Status,
-			&project.Progress, &project.ProfileKey, &project.EditID, &project.Metadata,
-			&project.ErrorMessage, &project.CreatedAt, &project.UpdatedAt,
+			&order.ID, &order.UserID, &order.AutoEnhanceOrderID, &order.Status,
+			&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan project: %w", err)
+			return nil, fmt.Errorf("failed to scan order: %w", err)
 		}
-		projects = append(projects, project)
+		orders = append(orders, order)
 	}
 
-	return projects, nil
+	return orders, nil
 }
 
-func (d *DatabaseClient) UpdateProjectStatus(projectID uuid.UUID, status string, progress int) error {
+func (d *DatabaseClient) UpdateOrderStatus(orderID uuid.UUID, status string, progress int) error {
 	_, err := d.db.Exec(`
-		UPDATE projects
+		UPDATE orders
 		SET status = $1, progress = $2
 		WHERE id = $3
-	`, status, progress, projectID)
+	`, status, progress, orderID)
 	return err
 }
 
-func (d *DatabaseClient) UpdateProjectEditID(projectID uuid.UUID, editID string) error {
+func (d *DatabaseClient) UpdateOrderError(orderID uuid.UUID, errorMsg string) error {
 	_, err := d.db.Exec(`
-		UPDATE projects
-		SET edit_id = $1, status = 'processing'
-		WHERE id = $2
-	`, editID, projectID)
-	return err
-}
-
-func (d *DatabaseClient) UpdateProjectError(projectID uuid.UUID, errorMsg string) error {
-	_, err := d.db.Exec(`
-		UPDATE projects
+		UPDATE orders
 		SET status = 'failed', error_message = $1
 		WHERE id = $2
-	`, errorMsg, projectID)
+	`, errorMsg, orderID)
 	return err
 }
 
-func (d *DatabaseClient) DeleteProject(projectID, userID uuid.UUID) error {
+func (d *DatabaseClient) DeleteOrder(orderID, userID uuid.UUID) error {
 	_, err := d.db.Exec(`
-		DELETE FROM projects
+		DELETE FROM orders
 		WHERE id = $1 AND user_id = $2
-	`, projectID, userID)
+	`, orderID, userID)
 	return err
 }
 
-func (d *DatabaseClient) CreateProjectFile(file *models.ProjectFile) error {
+func (d *DatabaseClient) GetOrderByAutoEnhanceOrderID(autoenhanceOrderID string) (*models.Order, error) {
+	var order models.Order
+	err := d.db.QueryRow(`
+		SELECT id, user_id, autoenhance_order_id, status, progress, metadata, error_message, created_at, updated_at
+		FROM orders
+		WHERE autoenhance_order_id = $1
+	`, autoenhanceOrderID).Scan(
+		&order.ID, &order.UserID, &order.AutoEnhanceOrderID, &order.Status,
+		&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get order: %w", err)
+	}
+
+	return &order, nil
+}
+
+func (d *DatabaseClient) CreateOrderFile(file *models.OrderFile) error {
 	_, err := d.db.Exec(`
-		INSERT INTO project_files (project_id, user_id, filename, imagen_file_id, storage_path, storage_url, file_size, mime_type, is_final)
+		INSERT INTO order_files (order_id, user_id, filename, autoenhance_image_id, storage_path, storage_url, file_size, mime_type, is_final)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, file.ProjectID, file.UserID, file.Filename, file.ImagenFileID, file.StoragePath,
+	`, file.OrderID, file.UserID, file.Filename, file.AutoEnhanceImageID, file.StoragePath,
 		file.StorageURL, file.FileSize, file.MimeType, file.IsFinal)
 	return err
 }
 
-func (d *DatabaseClient) GetProjectFiles(projectID, userID uuid.UUID) ([]models.ProjectFile, error) {
+func (d *DatabaseClient) GetOrderFiles(orderID, userID uuid.UUID) ([]models.OrderFile, error) {
 	rows, err := d.db.Query(`
-		SELECT id, project_id, user_id, filename, imagen_file_id, storage_path, storage_url, file_size, mime_type, is_final, created_at
-		FROM project_files
-		WHERE project_id = $1 AND user_id = $2
+		SELECT id, order_id, user_id, filename, autoenhance_image_id, storage_path, storage_url, file_size, mime_type, is_final, created_at
+		FROM order_files
+		WHERE order_id = $1 AND user_id = $2
 		ORDER BY created_at DESC
-	`, projectID, userID)
+	`, orderID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get project files: %w", err)
+		return nil, fmt.Errorf("failed to get order files: %w", err)
 	}
 	defer rows.Close()
 
-	var files []models.ProjectFile
+	var files []models.OrderFile
 	for rows.Next() {
-		var file models.ProjectFile
+		var file models.OrderFile
 		err := rows.Scan(
-			&file.ID, &file.ProjectID, &file.UserID, &file.Filename,
-			&file.ImagenFileID, &file.StoragePath, &file.StorageURL,
+			&file.ID, &file.OrderID, &file.UserID, &file.Filename,
+			&file.AutoEnhanceImageID, &file.StoragePath, &file.StorageURL,
 			&file.FileSize, &file.MimeType, &file.IsFinal, &file.CreatedAt,
 		)
 		if err != nil {
@@ -167,22 +172,51 @@ func (d *DatabaseClient) GetProjectFiles(projectID, userID uuid.UUID) ([]models.
 	return files, nil
 }
 
-func (d *DatabaseClient) GetProjectByImagenUUID(imagenProjectUUID string) (*models.Project, error) {
-	var project models.Project
-	err := d.db.QueryRow(`
-		SELECT id, user_id, imagen_project_uuid, status, progress, profile_key, edit_id, metadata, error_message, created_at, updated_at
-		FROM projects
-		WHERE imagen_project_uuid = $1
-	`, imagenProjectUUID).Scan(
-		&project.ID, &project.UserID, &project.ImagenProjectUUID, &project.Status,
-		&project.Progress, &project.ProfileKey, &project.EditID, &project.Metadata,
-		&project.ErrorMessage, &project.CreatedAt, &project.UpdatedAt,
-	)
+func (d *DatabaseClient) CreateBracket(bracket *models.Bracket) error {
+	_, err := d.db.Exec(`
+		INSERT INTO brackets (order_id, bracket_id, image_id, filename, upload_url, is_uploaded, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`, bracket.OrderID, bracket.BracketID, bracket.ImageID, bracket.Filename,
+		bracket.UploadURL, bracket.IsUploaded, bracket.Metadata)
+	return err
+}
+
+func (d *DatabaseClient) GetBracketsByOrderID(orderID uuid.UUID) ([]models.Bracket, error) {
+	rows, err := d.db.Query(`
+		SELECT id, order_id, bracket_id, image_id, filename, upload_url, is_uploaded, metadata, created_at
+		FROM brackets
+		WHERE order_id = $1
+		ORDER BY created_at ASC
+	`, orderID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get project: %w", err)
+		return nil, fmt.Errorf("failed to get brackets: %w", err)
+	}
+	defer rows.Close()
+
+	var brackets []models.Bracket
+	for rows.Next() {
+		var bracket models.Bracket
+		err := rows.Scan(
+			&bracket.ID, &bracket.OrderID, &bracket.BracketID, &bracket.ImageID,
+			&bracket.Filename, &bracket.UploadURL, &bracket.IsUploaded,
+			&bracket.Metadata, &bracket.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan bracket: %w", err)
+		}
+		brackets = append(brackets, bracket)
 	}
 
-	return &project, nil
+	return brackets, nil
+}
+
+func (d *DatabaseClient) UpdateBracketImageID(bracketID string, imageID string) error {
+	_, err := d.db.Exec(`
+		UPDATE brackets
+		SET image_id = $1
+		WHERE bracket_id = $2
+	`, imageID, bracketID)
+	return err
 }
 
 func (d *DatabaseClient) Close() error {

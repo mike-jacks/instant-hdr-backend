@@ -1,22 +1,22 @@
-# Imagen AI Backend API Hub
+# AutoEnhance AI Backend API Hub
 
-A comprehensive Go backend service that serves as a complete hub for all Imagen AI API features. Integrated with Supabase for JWT authentication, database, storage, and real-time status updates. Designed for real estate photography where listings (home addresses) are equivalent to projects.
+A comprehensive Go backend service that serves as a complete hub for all AutoEnhance AI API features. Integrated with Supabase for JWT authentication, database, storage, and real-time status updates. Designed for real estate photography where listings (home addresses) are equivalent to orders.
 
 ## Features
 
-- **Project Management**: Create, list, get, and delete Imagen projects
-- **Image Upload**: Upload bracketed images for HDR processing
-- **HDR Processing**: Process images with Imagen AI's HDR merge and other AI tools
+- **Order Management**: Create, list, get, and delete AutoEnhance orders
+- **Image Upload**: Upload bracketed images as brackets for HDR processing
+- **HDR Processing**: Process images with AutoEnhance AI's HDR merge and enhancement
 - **Real-time Status**: Status updates via Supabase Realtime
 - **Automatic Storage**: Automatically stores processed JPEG images in Supabase Storage
-- **Webhook Support**: Receives status updates from Imagen AI via webhooks
+- **Webhook Support**: Receives status updates from AutoEnhance AI via webhooks
 - **JWT Authentication**: Secure endpoints with Supabase JWT tokens
 
 ## Prerequisites
 
 - Go 1.21 or later
 - Supabase account and project
-- Imagen AI API key
+- AutoEnhance AI API key
 - PostgreSQL database (via Supabase)
 
 ## Setup
@@ -106,28 +106,32 @@ swag init -g cmd/server/main.go -o docs
 
 ## API Endpoints
 
-All endpoints (except `/health` and `/api/v1/webhooks/imagen`) require JWT authentication via `Authorization: Bearer <token>` header.
+All endpoints (except `/health` and `/api/v1/webhooks/autoenhance`) require JWT authentication via `Authorization: Bearer <token>` header.
 
-### Project Management
+### Order Management
 
-- `POST /api/v1/projects` - Create a new project
-- `GET /api/v1/projects` - List all projects for authenticated user
-- `GET /api/v1/projects/:project_id` - Get project details
-- `DELETE /api/v1/projects/:project_id` - Delete a project
+- `POST /api/v1/orders` - Create a new order
+- `GET /api/v1/orders` - List all orders for authenticated user
+- `GET /api/v1/orders/:order_id` - Get order details
+- `DELETE /api/v1/orders/:order_id` - Delete an order
 
 ### Image Upload & Processing
 
-- `POST /api/v1/projects/:project_id/upload` - Upload bracketed images
-- `POST /api/v1/projects/:project_id/process` - Initiate HDR processing
+- `POST /api/v1/orders/:order_id/upload` - Upload bracketed images
+- `POST /api/v1/orders/:order_id/process` - Initiate HDR processing
 
 ### Status & Files
 
-- `GET /api/v1/projects/:project_id/status` - Get project status (optional/fallback)
-- `GET /api/v1/projects/:project_id/files` - List project files
+- `GET /api/v1/orders/:order_id/status` - Get order status (optional/fallback)
+- `GET /api/v1/orders/:order_id/files` - List order files
+
+### Profiles
+
+- `GET /api/v1/profiles` - Get available enhance_type options (AutoEnhance doesn't use profiles)
 
 ### Webhooks
 
-- `POST /api/v1/webhooks/imagen` - Imagen AI webhook endpoint (no auth, uses HMAC)
+- `POST /api/v1/webhooks/autoenhance` - AutoEnhance AI webhook endpoint (no auth, uses token authentication)
 
 ### Health
 
@@ -137,7 +141,7 @@ All endpoints (except `/health` and `/api/v1/webhooks/imagen`) require JWT authe
 
 The iPhone app connects directly to Supabase Realtime (not through this backend) to receive real-time status updates:
 
-- Channels: `project:{project_id}` and `user:{user_id}`
+- Channels: `order:{order_id}` and `user:{user_id}`
 - Events: `upload_started`, `upload_completed`, `processing_started`, `processing_progress`, `processing_completed`, `processing_failed`, `download_ready`
 
 ## Deployment to Railway.app
@@ -166,9 +170,9 @@ If you prefer to use Nixpacks instead of Docker, you can update `railway.json`:
 1. Create a new Railway project
 2. Connect your GitHub repository
 3. Add all environment variables from `.env.example`:
-   - `IMAGEN_API_KEY`
-   - `IMAGEN_API_BASE_URL`
-   - `IMAGEN_WEBHOOK_SECRET`
+   - `AUTOENHANCE_API_KEY`
+   - `AUTOENHANCE_API_BASE_URL`
+   - `AUTOENHANCE_WEBHOOK_TOKEN` (optional, for webhook verification)
    - `SUPABASE_URL`
    - `SUPABASE_PUBLISHABLE_KEY`
    - `SUPABASE_JWT_SECRET`
@@ -216,7 +220,8 @@ instant-hdr-backend/
 │   ├── config/          # Configuration management
 │   ├── handlers/        # HTTP request handlers
 │   ├── middleware/      # Middleware (auth, etc.)
-│   ├── imagen/          # Imagen API client
+│   ├── autoenhance/     # AutoEnhance AI API client
+│   ├── imagen/          # Imagen API client (kept for reference, not used)
 │   ├── supabase/        # Supabase clients (storage, realtime, database)
 │   ├── models/          # Data models
 │   ├── database/        # Database migrations and queries
@@ -233,7 +238,12 @@ instant-hdr-backend/
 ### Required Environment Variables
 
 ```bash
-# Imagen AI Configuration
+# AutoEnhance AI Configuration
+AUTOENHANCE_API_KEY=your-autoenhance-api-key-here
+AUTOENHANCE_API_BASE_URL=https://api.autoenhance.ai
+AUTOENHANCE_WEBHOOK_TOKEN=your-webhook-token-here
+
+# Imagen AI Configuration (kept for backward compatibility, not used)
 IMAGEN_API_KEY=your-imagen-api-key-here
 IMAGEN_API_BASE_URL=https://api.imagen-ai.com/v1/
 IMAGEN_WEBHOOK_SECRET=your-webhook-secret-here
@@ -248,7 +258,7 @@ SUPABASE_STORAGE_BUCKET=processed-images
 DATABASE_URL=postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
 
 # Webhook Configuration
-WEBHOOK_CALLBACK_URL=https://your-backend-url.com/api/v1/webhooks/imagen
+WEBHOOK_CALLBACK_URL=https://your-backend-url.com/api/v1/webhooks/autoenhance
 
 # Server Configuration
 PORT=8080

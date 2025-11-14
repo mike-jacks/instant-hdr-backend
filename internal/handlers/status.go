@@ -21,18 +21,18 @@ func NewStatusHandler(dbClient *supabase.DatabaseClient) *StatusHandler {
 }
 
 // GetStatus godoc
-// @Summary     Get project status
-// @Description Returns the current status and progress of a project. For real-time updates, connect to Supabase Realtime.
+// @Summary     Get order status
+// @Description Returns the current status and progress of an order. For real-time updates, connect to Supabase Realtime.
 // @Tags        status
 // @Accept      json
 // @Produce     json
 // @Security    Bearer
-// @Param       project_id path string true "Project ID (UUID)"
+// @Param       order_id path string true "Order ID (UUID)"
 // @Success     200 {object} models.StatusResponse
 // @Failure     400 {object} models.ErrorResponse
 // @Failure     401 {object} models.ErrorResponse
 // @Failure     404 {object} models.ErrorResponse
-// @Router      /projects/{project_id}/status [get]
+// @Router      /orders/{order_id}/status [get]
 func (h *StatusHandler) GetStatus(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})
@@ -51,26 +51,26 @@ func (h *StatusHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	projectIDStr := c.Param("project_id")
-	projectID, err := uuid.Parse(projectIDStr)
+	orderIDStr := c.Param("order_id")
+	orderID, err := uuid.Parse(orderIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid project id"})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid order id"})
 		return
 	}
 
-	project, err := h.dbClient.GetProject(projectID, userID)
+	order, err := h.dbClient.GetOrder(orderID, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{
-			Error:   "project not found",
+			Error:   "order not found",
 			Message: err.Error(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, models.StatusResponse{
-		ProjectID: projectID.String(),
-		Status:    project.Status,
-		Progress:  project.Progress,
-		UpdatedAt: project.UpdatedAt,
+		OrderID:  orderID.String(),
+		Status:   order.Status,
+		Progress: order.Progress,
+		UpdatedAt: order.UpdatedAt,
 	})
 }

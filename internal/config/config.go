@@ -6,7 +6,12 @@ import (
 )
 
 type Config struct {
-	// Imagen API
+	// AutoEnhance AI API
+	AutoEnhanceAPIKey       string
+	AutoEnhanceAPIBaseURL   string
+	AutoEnhanceWebhookToken string
+
+	// Imagen API (kept for backward compatibility, not used)
 	ImagenAPIKey        string
 	ImagenAPIBaseURL    string
 	ImagenWebhookSecret string
@@ -31,6 +36,12 @@ type Config struct {
 
 func Load() (*Config, error) {
 	cfg := &Config{
+		// AutoEnhance AI API
+		AutoEnhanceAPIKey:       getEnv("AUTOENHANCE_API_KEY", ""),
+		AutoEnhanceAPIBaseURL:   getEnv("AUTOENHANCE_API_BASE_URL", "https://api.autoenhance.ai"),
+		AutoEnhanceWebhookToken: getEnv("AUTOENHANCE_WEBHOOK_TOKEN", ""),
+
+		// Imagen API (kept for backward compatibility, not used)
 		ImagenAPIKey:        getEnv("IMAGEN_API_KEY", ""),
 		ImagenAPIBaseURL:    getEnv("IMAGEN_API_BASE_URL", "https://api.imagen-ai.com/v1/"),
 		ImagenWebhookSecret: getEnv("IMAGEN_WEBHOOK_SECRET", ""),
@@ -57,9 +68,15 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) Validate() error {
-	if c.ImagenAPIKey == "" {
-		return fmt.Errorf("IMAGEN_API_KEY is required")
+	// AutoEnhance AI API is required
+	if c.AutoEnhanceAPIKey == "" {
+		return fmt.Errorf("AUTOENHANCE_API_KEY is required")
 	}
+	if c.AutoEnhanceAPIBaseURL == "" {
+		return fmt.Errorf("AUTOENHANCE_API_BASE_URL is required")
+	}
+
+	// Supabase is required
 	if c.SupabaseURL == "" {
 		return fmt.Errorf("SUPABASE_URL is required")
 	}
@@ -69,6 +86,8 @@ func (c *Config) Validate() error {
 	if c.SupabaseJWTSecret == "" {
 		return fmt.Errorf("SUPABASE_JWT_SECRET is required")
 	}
+
+	// Imagen API fields are kept for backward compatibility but not validated
 	return nil
 }
 

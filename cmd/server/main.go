@@ -1,6 +1,6 @@
 // @title           Instant HDR Backend API
 // @version         1.0.0
-// @description     Backend API for processing bracketed images with Imagen AI HDR merging. This API handles project creation, image uploads, HDR processing, and real-time status updates via Supabase Realtime.
+// @description     Backend API for processing bracketed images with AutoEnhance AI HDR merging. This API handles order creation, image uploads, HDR processing, and real-time status updates via Supabase Realtime.
 
 // @contact.name   API Support
 // @contact.email  support@example.com
@@ -23,10 +23,11 @@ import (
 	"net/http"
 
 	"instant-hdr-backend/docs"
+	"instant-hdr-backend/internal/autoenhance"
 	"instant-hdr-backend/internal/config"
 	"instant-hdr-backend/internal/database"
 	"instant-hdr-backend/internal/handlers"
-	"instant-hdr-backend/internal/imagen"
+	_ "instant-hdr-backend/internal/imagen" // Kept for reference, not used
 	"instant-hdr-backend/internal/middleware"
 	"instant-hdr-backend/internal/services"
 	"instant-hdr-backend/internal/supabase"
@@ -75,8 +76,11 @@ func main() {
 	// For migrations, we need direct PostgreSQL connection
 	// This is a simplified version - in production, you'd have proper connection string management
 
-	// Initialize Imagen client
-	imagenClient := imagen.NewClient(cfg.ImagenAPIBaseURL, cfg.ImagenAPIKey)
+	// Initialize AutoEnhance AI client
+	autoenhanceClient := autoenhance.NewClient(cfg.AutoEnhanceAPIBaseURL, cfg.AutoEnhanceAPIKey)
+
+	// Imagen client kept for reference but not used
+	// imagenClient := imagen.NewClient(cfg.ImagenAPIBaseURL, cfg.ImagenAPIKey)
 
 	// Initialize Supabase clients
 	supabaseClient, err := supabase.NewClient(cfg)
@@ -120,16 +124,16 @@ func main() {
 	// Initialize storage service (only if dbClient is available)
 	var storageService *services.StorageService
 	if dbClient != nil {
-		storageService = services.NewStorageService(imagenClient, dbClient, storageClient, realtimeClient)
+		storageService = services.NewStorageService(autoenhanceClient, dbClient, storageClient, realtimeClient)
 	}
 
 	// Initialize handlers (dbClient might be nil, handlers should handle this)
-	projectsHandler := handlers.NewProjectsHandler(imagenClient, dbClient, storageClient)
-	uploadHandler := handlers.NewUploadHandler(imagenClient, dbClient, realtimeClient)
-	processHandler := handlers.NewProcessHandler(imagenClient, dbClient, realtimeClient, cfg.WebhookCallbackURL)
+	ordersHandler := handlers.NewOrdersHandler(autoenhanceClient, dbClient, storageClient)
+	uploadHandler := handlers.NewUploadHandler(autoenhanceClient, dbClient, realtimeClient)
+	processHandler := handlers.NewProcessHandler(autoenhanceClient, dbClient, realtimeClient)
 	statusHandler := handlers.NewStatusHandler(dbClient)
 	filesHandler := handlers.NewFilesHandler(dbClient)
-	profilesHandler := handlers.NewProfilesHandler(imagenClient)
+	profilesHandler := handlers.NewProfilesHandler()
 
 	// Webhook handler requires storage service
 	if storageService == nil {
@@ -155,25 +159,25 @@ func main() {
 	api := router.Group("/api/v1")
 	api.Use(middleware.AuthMiddleware(cfg))
 
-	// Project routes
-	api.POST("/projects", projectsHandler.CreateProject)
-	api.GET("/projects", projectsHandler.ListProjects)
-	api.GET("/projects/:project_id", projectsHandler.GetProject)
-	api.DELETE("/projects/:project_id", projectsHandler.DeleteProject)
+	// Order routes
+	api.POST("/orders", ordersHandler.CreateOrder)
+	api.GET("/orders", ordersHandler.ListOrders)
+	api.GET("/orders/:order_id", ordersHandler.GetOrder)
+	api.DELETE("/orders/:order_id", ordersHandler.DeleteOrder)
 
 	// Upload and processing
-	api.POST("/projects/:project_id/upload", uploadHandler.Upload)
-	api.POST("/projects/:project_id/process", processHandler.Process)
+	api.POST("/orders/:order_id/upload", uploadHandler.Upload)
+	api.POST("/orders/:order_id/process", processHandler.Process)
 
 	// Status and files
-	api.GET("/projects/:project_id/status", statusHandler.GetStatus)
-	api.GET("/projects/:project_id/files", filesHandler.GetFiles)
+	api.GET("/orders/:order_id/status", statusHandler.GetStatus)
+	api.GET("/orders/:order_id/files", filesHandler.GetFiles)
 
-	// Profiles
+	// Profiles (returns enhance_type options)
 	api.GET("/profiles", profilesHandler.GetProfiles)
 
-	// Webhook (no auth, uses HMAC)
-	router.POST("/api/v1/webhooks/imagen", webhookHandler.HandleWebhook)
+	// Webhook (no auth, uses token authentication)
+	router.POST("/api/v1/webhooks/autoenhance", webhookHandler.HandleWebhook)
 
 	// Start server
 	port := cfg.Port

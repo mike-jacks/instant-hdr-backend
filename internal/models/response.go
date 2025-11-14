@@ -2,25 +2,23 @@ package models
 
 import "time"
 
-type ProjectResponse struct {
-	ID                string                 `json:"project_id"`
-	ImagenProjectUUID string                 `json:"imagen_project_uuid"`
-	Status            string                 `json:"status"`
-	Progress          int                    `json:"progress"`
-	ProfileKey        string                 `json:"profile_key,omitempty"`
-	EditID            string                 `json:"edit_id,omitempty"`
-	Metadata          map[string]interface{} `json:"metadata,omitempty"`
-	ErrorMessage      string                 `json:"error_message,omitempty"`
-	CreatedAt         time.Time              `json:"created_at"`
-	UpdatedAt         time.Time              `json:"updated_at"`
+type OrderResponse struct {
+	ID                 string                 `json:"order_id"`
+	AutoEnhanceOrderID string                 `json:"autoenhance_order_id"`
+	Status             string                 `json:"status"`
+	Progress           int                    `json:"progress"`
+	Metadata           map[string]interface{} `json:"metadata,omitempty"`
+	ErrorMessage       string                 `json:"error_message,omitempty"`
+	CreatedAt          time.Time              `json:"created_at"`
+	UpdatedAt          time.Time              `json:"updated_at"`
 }
 
-type ProjectListResponse struct {
-	Projects []ProjectSummary `json:"projects"`
+type OrderListResponse struct {
+	Orders []OrderSummary `json:"orders"`
 }
 
-type ProjectSummary struct {
-	ID        string    `json:"project_id"`
+type OrderSummary struct {
+	ID        string    `json:"order_id"`
 	Status    string    `json:"status"`
 	Progress  int       `json:"progress"`
 	CreatedAt time.Time `json:"created_at"`
@@ -28,9 +26,9 @@ type ProjectSummary struct {
 }
 
 type UploadResponse struct {
-	ProjectID string     `json:"project_id"`
-	Files     []FileInfo `json:"files"`
-	Status    string     `json:"status"`
+	OrderID string     `json:"order_id"`
+	Files   []FileInfo `json:"files"`
+	Status  string     `json:"status"`
 }
 
 type FileInfo struct {
@@ -39,15 +37,14 @@ type FileInfo struct {
 }
 
 type ProcessResponse struct {
-	ProjectID string `json:"project_id"`
-	Status    string `json:"status"`
-	EditID    string `json:"edit_id"`
+	OrderID string `json:"order_id"`
+	Status  string `json:"status"`
 }
 
 type StatusResponse struct {
-	ProjectID string    `json:"project_id"`
-	Status    string    `json:"status"`
-	Progress  int       `json:"progress"`
+	OrderID  string    `json:"order_id"`
+	Status   string    `json:"status"`
+	Progress int       `json:"progress"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 

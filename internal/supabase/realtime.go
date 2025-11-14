@@ -27,9 +27,14 @@ func (r *RealtimeClient) PublishEvent(channel string, event string, payload map[
 	return nil
 }
 
-func (r *RealtimeClient) PublishProjectEvent(projectID uuid.UUID, event string, payload map[string]interface{}) error {
-	channel := fmt.Sprintf("project:%s", projectID.String())
+func (r *RealtimeClient) PublishOrderEvent(orderID uuid.UUID, event string, payload map[string]interface{}) error {
+	channel := fmt.Sprintf("order:%s", orderID.String())
 	return r.PublishEvent(channel, event, payload)
+}
+
+// Deprecated: Use PublishOrderEvent instead
+func (r *RealtimeClient) PublishProjectEvent(projectID uuid.UUID, event string, payload map[string]interface{}) error {
+	return r.PublishOrderEvent(projectID, event, payload)
 }
 
 func (r *RealtimeClient) PublishUserEvent(userID uuid.UUID, event string, payload map[string]interface{}) error {
@@ -38,59 +43,58 @@ func (r *RealtimeClient) PublishUserEvent(userID uuid.UUID, event string, payloa
 }
 
 // Event payloads
-func UploadStartedPayload(projectID uuid.UUID, fileCount int) map[string]interface{} {
+func UploadStartedPayload(orderID uuid.UUID, fileCount int) map[string]interface{} {
 	return map[string]interface{}{
-		"project_id": projectID.String(),
-		"status":     "uploading",
+		"order_id":  orderID.String(),
+		"status":    "uploading",
 		"file_count": fileCount,
 	}
 }
 
-func UploadCompletedPayload(projectID uuid.UUID, fileCount int) map[string]interface{} {
+func UploadCompletedPayload(orderID uuid.UUID, fileCount int) map[string]interface{} {
 	return map[string]interface{}{
-		"project_id": projectID.String(),
-		"status":     "uploaded",
+		"order_id":  orderID.String(),
+		"status":    "uploaded",
 		"file_count": fileCount,
 	}
 }
 
-func ProcessingStartedPayload(projectID uuid.UUID, editID string) map[string]interface{} {
+func ProcessingStartedPayload(orderID uuid.UUID, editID string) map[string]interface{} {
 	return map[string]interface{}{
-		"project_id": projectID.String(),
-		"status":     "processing",
-		"edit_id":    editID,
+		"order_id": orderID.String(),
+		"status":   "processing",
 	}
 }
 
-func ProcessingProgressPayload(projectID uuid.UUID, progress int) map[string]interface{} {
+func ProcessingProgressPayload(orderID uuid.UUID, progress int) map[string]interface{} {
 	return map[string]interface{}{
-		"project_id": projectID.String(),
-		"status":     "processing",
-		"progress":   progress,
+		"order_id": orderID.String(),
+		"status":   "processing",
+		"progress": progress,
 	}
 }
 
-func ProcessingCompletedPayload(projectID uuid.UUID, fileCount int) map[string]interface{} {
+func ProcessingCompletedPayload(orderID uuid.UUID, fileCount int) map[string]interface{} {
 	return map[string]interface{}{
-		"project_id": projectID.String(),
-		"status":     "completed",
-		"progress":   100,
+		"order_id":  orderID.String(),
+		"status":    "completed",
+		"progress":  100,
 		"file_count": fileCount,
 	}
 }
 
-func ProcessingFailedPayload(projectID uuid.UUID, errorMsg string) map[string]interface{} {
+func ProcessingFailedPayload(orderID uuid.UUID, errorMsg string) map[string]interface{} {
 	return map[string]interface{}{
-		"project_id": projectID.String(),
-		"status":     "failed",
-		"error":      errorMsg,
+		"order_id": orderID.String(),
+		"status":   "failed",
+		"error":    errorMsg,
 	}
 }
 
-func DownloadReadyPayload(projectID uuid.UUID, storageURLs []string) map[string]interface{} {
+func DownloadReadyPayload(orderID uuid.UUID, storageURLs []string) map[string]interface{} {
 	return map[string]interface{}{
-		"project_id":   projectID.String(),
-		"status":       "completed",
+		"order_id":    orderID.String(),
+		"status":      "completed",
 		"storage_urls": storageURLs,
 	}
 }

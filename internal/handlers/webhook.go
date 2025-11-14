@@ -1,12 +1,10 @@
 package handlers
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/xml"
+	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"instant-hdr-backend/internal/config"
@@ -26,45 +24,46 @@ func NewWebhookHandler(cfg *config.Config, storageService *services.StorageServi
 	}
 }
 
-// WebhookEvent represents Imagen webhook event structure
-type WebhookEvent struct {
-	XMLName xml.Name `xml:"event"`
-	ID      string   `xml:"id,attr"`
-	Type    string   `xml:"type,attr"`
-	Project string   `xml:"project"`
-	Status  string   `xml:"status"`
-	Message string   `xml:"message,omitempty"`
+// AutoEnhanceWebhookEvent represents AutoEnhance webhook event structure
+type AutoEnhanceWebhookEvent struct {
+	Event            string `json:"event"`              // "image_processed" or "webhook_updated"
+	ImageID          string `json:"image_id,omitempty"` // The ID of the processed image
+	Error            bool   `json:"error"`              // True if the image had an error
+	OrderID          string `json:"order_id,omitempty"` // The ID of the order the image belongs to
+	OrderIsProcessing bool  `json:"order_is_processing"` // True if order is processing, false if all images processed
 }
 
 // HandleWebhook godoc
-// @Summary     Imagen AI webhook endpoint
-// @Description Receives webhook callbacks from Imagen AI for processing status updates. Supports challenge parameter for webhook setup. Uses HMAC-SHA256 signature verification.
+// @Summary     AutoEnhance AI webhook endpoint
+// @Description Receives webhook callbacks from AutoEnhance AI for processing status updates. Uses authentication token verification.
 // @Tags        webhooks
-// @Accept      xml
+// @Accept      json
 // @Produce     json
-// @Param       challenge query string false "Challenge string for webhook verification"
-// @Param       X-Imagen-Webhook header string true "HMAC-SHA256 signature"
+// @Param       Authorization header string true "Authentication token (configured in AutoEnhance web app)"
 // @Success     200 {object} map[string]string "status"
 // @Failure     400 {object} models.ErrorResponse
 // @Failure     401 {object} models.ErrorResponse
-// @Router      /webhooks/imagen [post]
+// @Router      /webhooks/autoenhance [post]
 func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
-	// Handle challenge parameter for webhook setup
-	challenge := c.Query("challenge")
-	if challenge != "" {
-		c.String(http.StatusOK, challenge)
-		return
-	}
-
 	if h.storageService == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "storage service not available"})
 		return
 	}
 
-	// Verify HMAC signature
-	signature := c.GetHeader("X-Imagen-Webhook")
-	if signature == "" {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "missing signature"})
+	// Verify authentication token
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "missing authorization token"})
+		return
+	}
+
+	// Extract token (could be "Bearer <token>" or just "<token>")
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	token = strings.TrimSpace(token)
+
+	// Verify token matches configured webhook token
+	if h.config.AutoEnhanceWebhookToken != "" && token != h.config.AutoEnhanceWebhookToken {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "invalid authorization token"})
 		return
 	}
 
@@ -78,15 +77,9 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 		return
 	}
 
-	// Verify signature
-	if !h.verifySignature(signature, c.Request.URL.String(), body) {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "invalid signature"})
-		return
-	}
-
-	// Parse XML event
-	var event WebhookEvent
-	if err := xml.Unmarshal(body, &event); err != nil {
+	// Parse JSON event
+	var event AutoEnhanceWebhookEvent
+	if err := json.Unmarshal(body, &event); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error:   "failed to parse event",
 			Message: err.Error(),
@@ -94,28 +87,24 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 		return
 	}
 
-	// Process event based on type
-	switch event.Type {
-	case "processing_completed":
-		// Trigger automatic storage
-		go h.storageService.HandleProcessingCompleted(event.Project, event.ID)
-	case "processing_failed":
-		// Update project status
-		go h.storageService.HandleProcessingFailed(event.Project, event.Message)
-	case "processing_progress":
-		// Update progress (if provided in message)
-		// This would need parsing the message for progress percentage
+	// Handle webhook_updated event (sent when webhook URL is configured)
+	if event.Event == "webhook_updated" {
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "message": "webhook configured"})
+		return
+	}
+
+	// Process image_processed events
+	if event.Event == "image_processed" {
+		if event.Error {
+			// Image processing failed
+			go h.storageService.HandleProcessingFailed(event.OrderID, "image processing failed")
+		} else if !event.OrderIsProcessing {
+			// All images in order are complete
+			go h.storageService.HandleProcessingCompleted(event.OrderID, event.ImageID)
+		}
+		// If order_is_processing is true, more images are still being processed
+		// We'll wait for the final event when order_is_processing is false
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
-}
-
-func (h *WebhookHandler) verifySignature(signature, url string, body []byte) bool {
-	// Create HMAC hash
-	mac := hmac.New(sha256.New, []byte(h.config.ImagenWebhookSecret))
-	mac.Write([]byte(url))
-	mac.Write(body)
-	expectedSignature := base64.StdEncoding.EncodeToString(mac.Sum(nil))
-
-	return hmac.Equal([]byte(signature), []byte(expectedSignature))
 }

@@ -38,22 +38,22 @@ type UploadLinkResponse struct {
 }
 
 type EditRequest struct {
-	ProfileKey              int                    `json:"profile_key"`
-	Crop                    bool                   `json:"crop,omitempty"`
-	PortraitCrop            bool                   `json:"portrait_crop,omitempty"`
-	HeadshotCrop            bool                   `json:"headshot_crop,omitempty"`
-	CropAspectRatio         string                 `json:"crop_aspect_ratio,omitempty"` // "2X3", "4X5", "5X7"
-	HDRMerge                bool                   `json:"hdr_merge,omitempty"`
-	Straighten              bool                   `json:"straighten,omitempty"`
-	SubjectMask             bool                   `json:"subject_mask,omitempty"`
-	PhotographyType         string                 `json:"photography_type,omitempty"` // "NO_TYPE", "REAL_ESTATE", etc.
-	CallbackURL             string                 `json:"callback_url,omitempty"`
-	SmoothSkin              bool                   `json:"smooth_skin,omitempty"`
-	PerspectiveCorrection    bool                   `json:"perspective_correction,omitempty"`
-	WindowPull              bool                   `json:"window_pull,omitempty"`
-	SkyReplacement          bool                   `json:"sky_replacement,omitempty"`
-	SkyReplacementTemplateID int                    `json:"sky_replacement_template_id,omitempty"`
-	HDROutputCompression    string                 `json:"hdr_output_compression,omitempty"` // "LOSSY", "LOSSLESS"
+	ProfileKey               int    `json:"profile_key"`
+	Crop                     bool   `json:"crop,omitempty"`
+	PortraitCrop             bool   `json:"portrait_crop,omitempty"`
+	HeadshotCrop             bool   `json:"headshot_crop,omitempty"`
+	CropAspectRatio          string `json:"crop_aspect_ratio,omitempty"` // "2X3", "4X5", "5X7"
+	HDRMerge                 bool   `json:"hdr_merge,omitempty"`
+	Straighten               bool   `json:"straighten,omitempty"`
+	SubjectMask              bool   `json:"subject_mask,omitempty"`
+	PhotographyType          string `json:"photography_type,omitempty"` // "NO_TYPE", "REAL_ESTATE", etc.
+	CallbackURL              string `json:"callback_url,omitempty"`
+	SmoothSkin               bool   `json:"smooth_skin,omitempty"`
+	PerspectiveCorrection    bool   `json:"perspective_correction,omitempty"`
+	WindowPull               bool   `json:"window_pull,omitempty"`
+	SkyReplacement           bool   `json:"sky_replacement,omitempty"`
+	SkyReplacementTemplateID int    `json:"sky_replacement_template_id,omitempty"`
+	HDROutputCompression     string `json:"hdr_output_compression,omitempty"` // "LOSSY", "LOSSLESS"
 }
 
 // EditResponse is empty according to OpenAPI spec - no response body
@@ -81,7 +81,7 @@ func (c *Client) CreateProject() (string, error) {
 	// According to OpenAPI spec: POST /v1/projects/ or /v1/projects
 	// Try with trailing slash first (as shown in OpenAPI spec)
 	url := strings.TrimSuffix(c.baseURL, "/") + "/projects/"
-	
+
 	// Send empty JSON body (request body is optional but some APIs expect it)
 	jsonData := []byte("{}")
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))

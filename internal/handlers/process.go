@@ -1,49 +1,45 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"instant-hdr-backend/internal/imagen"
+	"instant-hdr-backend/internal/autoenhance"
 	"instant-hdr-backend/internal/middleware"
 	"instant-hdr-backend/internal/models"
 	"instant-hdr-backend/internal/supabase"
 )
 
 type ProcessHandler struct {
-	imagenClient   *imagen.Client
-	dbClient       *supabase.DatabaseClient
-	realtimeClient *supabase.RealtimeClient
-	webhookURL     string
+	autoenhanceClient *autoenhance.Client
+	dbClient          *supabase.DatabaseClient
+	realtimeClient    *supabase.RealtimeClient
 }
 
-func NewProcessHandler(imagenClient *imagen.Client, dbClient *supabase.DatabaseClient, realtimeClient *supabase.RealtimeClient, webhookURL string) *ProcessHandler {
+func NewProcessHandler(autoenhanceClient *autoenhance.Client, dbClient *supabase.DatabaseClient, realtimeClient *supabase.RealtimeClient) *ProcessHandler {
 	return &ProcessHandler{
-		imagenClient:   imagenClient,
-		dbClient:       dbClient,
-		realtimeClient: realtimeClient,
-		webhookURL:     webhookURL,
+		autoenhanceClient: autoenhanceClient,
+		dbClient:          dbClient,
+		realtimeClient:    realtimeClient,
 	}
 }
 
 // Process godoc
 // @Summary     Process images with HDR merge
-// @Description Initiates HDR processing and merging of uploaded images using Imagen AI. If profile_key is not provided, the system will automatically search for and use a profile named "NATURAL HOME - JPEG" (or similar). HDR merge is enabled by default for real estate photography.
+// @Description Initiates HDR processing and merging of uploaded images using AutoEnhance AI. Groups brackets into images and processes them with the specified enhancement options.
 // @Tags        process
 // @Accept      json
 // @Produce     json
 // @Security    Bearer
-// @Param       project_id path string true "Project ID (UUID)"
-// @Param       request body models.ProcessRequest false "Processing options. profile_key is optional - if not provided, will auto-select 'NATURAL HOME - JPEG' profile. profile_key should be an integer (can be sent as string, will be converted). Get available profiles from /profiles endpoint."
+// @Param       order_id path string true "Order ID (UUID)"
+// @Param       request body models.ProcessRequest false "Processing options. enhance_type defaults to 'property' for real estate photography."
 // @Success     200 {object} models.ProcessResponse
 // @Failure     400 {object} models.ErrorResponse
 // @Failure     401 {object} models.ErrorResponse
 // @Failure     404 {object} models.ErrorResponse
 // @Failure     500 {object} models.ErrorResponse
-// @Router      /projects/{project_id}/process [post]
+// @Router      /orders/{order_id}/process [post]
 func (h *ProcessHandler) Process(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})
@@ -62,18 +58,18 @@ func (h *ProcessHandler) Process(c *gin.Context) {
 		return
 	}
 
-	projectIDStr := c.Param("project_id")
-	projectID, err := uuid.Parse(projectIDStr)
+	orderIDStr := c.Param("order_id")
+	orderID, err := uuid.Parse(orderIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid project id"})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid order id"})
 		return
 	}
 
-	// Verify project belongs to user
-	project, err := h.dbClient.GetProject(projectID, userID)
+	// Verify order belongs to user
+	order, err := h.dbClient.GetOrder(orderID, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{
-			Error:   "project not found",
+			Error:   "order not found",
 			Message: err.Error(),
 		})
 		return
@@ -88,70 +84,91 @@ func (h *ProcessHandler) Process(c *gin.Context) {
 		return
 	}
 
-	// Build edit request according to OpenAPI spec
-	// Get or determine profile_key
-	var profileKey int
-	if req.ProfileKey != "" {
-		// User provided profile_key, use it
-		_, err := fmt.Sscanf(req.ProfileKey, "%d", &profileKey)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, models.ErrorResponse{
-				Error:   "invalid profile_key",
-				Message: "profile_key must be a valid integer",
-			})
-			return
-		}
-	} else {
-		// No profile_key provided, try to find "natural home" profile
-		profiles, err := h.imagenClient.GetUserProfiles()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-				Error:   "failed to get profiles",
-				Message: "could not retrieve profiles to find default. Please provide profile_key in request.",
-			})
-			return
-		}
-
-		// Search for "NATURAL HOME - JPEG" profile (case-insensitive)
-		// Also matches variations like "Natural Home - JPEG", "natural home - jpeg", etc.
-		found := false
-		for _, profile := range profiles {
-			profileName := strings.ToLower(profile.ProfileName)
-			// Match "natural home" (with or without "jpeg" suffix)
-			if strings.Contains(profileName, "natural") && strings.Contains(profileName, "home") {
-				profileKey = profile.ProfileKey
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			// If "natural home" not found, use first available profile
-			if len(profiles) > 0 {
-				profileKey = profiles[0].ProfileKey
-			} else {
-				c.JSON(http.StatusBadRequest, models.ErrorResponse{
-					Error:   "no profile available",
-					Message: "no profiles found. Please create a profile in Imagen AI or provide profile_key in request.",
-				})
-				return
-			}
-		}
+	// Get brackets for this order
+	brackets, err := h.dbClient.GetBracketsByOrderID(orderID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "failed to get brackets",
+			Message: err.Error(),
+		})
+		return
 	}
 
-	editReq := imagen.EditRequest{
-		ProfileKey:      profileKey,
-		HDRMerge:        req.HDRMerge,
-		CallbackURL:     h.webhookURL,
-		PhotographyType: "REAL_ESTATE", // Default for real estate shoots
+	if len(brackets) == 0 {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "no brackets found",
+			Message: "please upload images before processing",
+		})
+		return
+	}
+
+	// Group brackets into images (for now, group all brackets into one image)
+	// In the future, this could be smarter about grouping by shot
+	bracketIDs := make([]string, len(brackets))
+	for i, bracket := range brackets {
+		bracketIDs[i] = bracket.BracketID
+	}
+
+	// Set default enhance_type if not provided
+	enhanceType := req.EnhanceType
+	if enhanceType == "" {
+		enhanceType = "property" // Default for real estate
+	}
+
+	// Build process request
+	processReq := autoenhance.OrderHDRProcessIn{
+		EnhanceType: enhanceType,
+		Images: []autoenhance.OrderImageIn{
+			{
+				BracketIDs: bracketIDs,
+			},
+		},
+	}
+
+	// Set optional fields
+	if req.SkyReplacement != nil {
+		processReq.SkyReplacement = req.SkyReplacement
+	} else {
+		skyReplacement := true // Default for real estate
+		processReq.SkyReplacement = &skyReplacement
+	}
+
+	if req.VerticalCorrection != nil {
+		processReq.VerticalCorrection = req.VerticalCorrection
+	} else {
+		verticalCorrection := true // Default
+		processReq.VerticalCorrection = &verticalCorrection
+	}
+
+	if req.LensCorrection != nil {
+		processReq.LensCorrection = req.LensCorrection
+	} else {
+		lensCorrection := true // Default
+		processReq.LensCorrection = &lensCorrection
+	}
+
+	if req.WindowPullType != "" {
+		processReq.WindowPullType = &req.WindowPullType
+	} else {
+		windowPullType := "ONLY_WINDOWS" // Default for real estate
+		processReq.WindowPullType = &windowPullType
+	}
+
+	if req.Upscale != nil {
+		processReq.Upscale = req.Upscale
+	}
+
+	if req.Privacy != nil {
+		processReq.Privacy = req.Privacy
 	}
 
 	// Initiate processing with retry
-	err = h.imagenClient.RetryWithBackoff(func() error {
-		return h.imagenClient.Edit(project.ImagenProjectUUID, editReq)
+	err = h.autoenhanceClient.RetryWithBackoff(func() error {
+		_, err := h.autoenhanceClient.ProcessOrder(order.AutoEnhanceOrderID, processReq)
+		return err
 	}, 3)
 	if err != nil {
-		h.dbClient.UpdateProjectError(projectID, err.Error())
+		h.dbClient.UpdateOrderError(orderID, err.Error())
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "failed to initiate processing",
 			Message: err.Error(),
@@ -159,16 +176,15 @@ func (h *ProcessHandler) Process(c *gin.Context) {
 		return
 	}
 
-	// Update project status (no editID returned from API)
-	h.dbClient.UpdateProjectStatus(projectID, "processing", 0)
+	// Update order status
+	h.dbClient.UpdateOrderStatus(orderID, "processing", 0)
 
 	// Publish processing_started event
-	h.realtimeClient.PublishProjectEvent(projectID, "processing_started",
-		supabase.ProcessingStartedPayload(projectID, ""))
+	h.realtimeClient.PublishOrderEvent(orderID, "processing_started",
+		supabase.ProcessingStartedPayload(orderID, ""))
 
 	c.JSON(http.StatusOK, models.ProcessResponse{
-		ProjectID: projectID.String(),
-		Status:    "processing",
-		EditID:    "", // No editID returned from API
+		OrderID: orderID.String(),
+		Status:  "processing",
 	})
 }

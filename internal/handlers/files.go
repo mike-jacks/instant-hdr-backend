@@ -21,18 +21,18 @@ func NewFilesHandler(dbClient *supabase.DatabaseClient) *FilesHandler {
 }
 
 // GetFiles godoc
-// @Summary     Get project files
-// @Description Returns a list of all processed files associated with a project, including their Supabase Storage URLs
+// @Summary     Get order files
+// @Description Returns a list of all processed files associated with an order, including their Supabase Storage URLs
 // @Tags        files
 // @Accept      json
 // @Produce     json
 // @Security    Bearer
-// @Param       project_id path string true "Project ID (UUID)"
+// @Param       order_id path string true "Order ID (UUID)"
 // @Success     200 {object} models.FilesResponse
 // @Failure     400 {object} models.ErrorResponse
 // @Failure     401 {object} models.ErrorResponse
 // @Failure     500 {object} models.ErrorResponse
-// @Router      /projects/{project_id}/files [get]
+// @Router      /orders/{order_id}/files [get]
 func (h *FilesHandler) GetFiles(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})
@@ -51,14 +51,14 @@ func (h *FilesHandler) GetFiles(c *gin.Context) {
 		return
 	}
 
-	projectIDStr := c.Param("project_id")
-	projectID, err := uuid.Parse(projectIDStr)
+	orderIDStr := c.Param("order_id")
+	orderID, err := uuid.Parse(orderIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid project id"})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid order id"})
 		return
 	}
 
-	files, err := h.dbClient.GetProjectFiles(projectID, userID)
+	files, err := h.dbClient.GetOrderFiles(orderID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "failed to get files",
@@ -69,11 +69,15 @@ func (h *FilesHandler) GetFiles(c *gin.Context) {
 
 	fileResponses := make([]models.FileResponse, len(files))
 	for i, file := range files {
+		fileSize := int64(0)
+		if file.FileSize.Valid {
+			fileSize = file.FileSize.Int64
+		}
 		fileResponses[i] = models.FileResponse{
 			ID:         file.ID.String(),
 			Filename:   file.Filename,
 			StorageURL: file.StorageURL,
-			FileSize:   file.FileSize.Int64,
+			FileSize:   fileSize,
 			MimeType:   file.MimeType,
 			IsFinal:    file.IsFinal,
 			CreatedAt:  file.CreatedAt,

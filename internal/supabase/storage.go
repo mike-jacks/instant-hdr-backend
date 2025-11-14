@@ -29,9 +29,9 @@ func NewStorageClient(supabaseURL, publishableKey, bucket string) (*StorageClien
 	}, nil
 }
 
-func (s *StorageClient) UploadFile(userID, projectID uuid.UUID, filename string, data []byte) (string, string, error) {
-	// Create storage path: users/{user_id}/projects/{project_id}/{filename}
-	storagePath := fmt.Sprintf("users/%s/projects/%s/%s", userID.String(), projectID.String(), filename)
+func (s *StorageClient) UploadFile(userID, orderID uuid.UUID, filename string, data []byte) (string, string, error) {
+	// Create storage path: users/{user_id}/orders/{order_id}/{filename}
+	storagePath := fmt.Sprintf("users/%s/orders/%s/%s", userID.String(), orderID.String(), filename)
 
 	// Upload file
 	contentType := "image/jpeg"
@@ -61,8 +61,8 @@ func (s *StorageClient) DeleteFile(storagePath string) error {
 	return err
 }
 
-func (s *StorageClient) DeleteProjectFiles(userID, projectID uuid.UUID) error {
-	prefix := fmt.Sprintf("users/%s/projects/%s/", userID.String(), projectID.String())
+func (s *StorageClient) DeleteOrderFiles(userID, orderID uuid.UUID) error {
+	prefix := fmt.Sprintf("users/%s/orders/%s/", userID.String(), orderID.String())
 
 	// List files with prefix
 	files, err := s.client.ListFiles(s.bucket, prefix, storage.FileSearchOptions{

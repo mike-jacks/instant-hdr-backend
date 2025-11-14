@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -8,41 +9,41 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"instant-hdr-backend/internal/imagen"
+	"instant-hdr-backend/internal/autoenhance"
 	"instant-hdr-backend/internal/middleware"
 	"instant-hdr-backend/internal/models"
 	"instant-hdr-backend/internal/supabase"
 )
 
 type UploadHandler struct {
-	imagenClient   *imagen.Client
-	dbClient       *supabase.DatabaseClient
-	realtimeClient *supabase.RealtimeClient
+	autoenhanceClient *autoenhance.Client
+	dbClient          *supabase.DatabaseClient
+	realtimeClient    *supabase.RealtimeClient
 }
 
-func NewUploadHandler(imagenClient *imagen.Client, dbClient *supabase.DatabaseClient, realtimeClient *supabase.RealtimeClient) *UploadHandler {
+func NewUploadHandler(autoenhanceClient *autoenhance.Client, dbClient *supabase.DatabaseClient, realtimeClient *supabase.RealtimeClient) *UploadHandler {
 	return &UploadHandler{
-		imagenClient:   imagenClient,
-		dbClient:       dbClient,
-		realtimeClient: realtimeClient,
+		autoenhanceClient: autoenhanceClient,
+		dbClient:          dbClient,
+		realtimeClient:    realtimeClient,
 	}
 }
 
 // Upload godoc
-// @Summary     Upload images to project
-// @Description Uploads multiple bracketed images to an Imagen AI project. All images in a single upload are expected to be bracketed images of the same shot.
+// @Summary     Upload images to order
+// @Description Uploads multiple bracketed images to an AutoEnhance AI order. All images in a single upload are expected to be bracketed images of the same shot.
 // @Tags        upload
 // @Accept      multipart/form-data
 // @Produce     json
 // @Security    Bearer
-// @Param       project_id path string true "Project ID (UUID)"
+// @Param       order_id path string true "Order ID (UUID)"
 // @Param       images formData file true "Bracketed images (multiple files allowed)"
 // @Success     200 {object} models.UploadResponse
 // @Failure     400 {object} models.ErrorResponse
 // @Failure     401 {object} models.ErrorResponse
 // @Failure     404 {object} models.ErrorResponse
 // @Failure     500 {object} models.ErrorResponse
-// @Router      /projects/{project_id}/upload [post]
+// @Router      /orders/{order_id}/upload [post]
 func (h *UploadHandler) Upload(c *gin.Context) {
 	if h.dbClient == nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "database not available"})
@@ -61,18 +62,18 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		return
 	}
 
-	projectIDStr := c.Param("project_id")
-	projectID, err := uuid.Parse(projectIDStr)
+	orderIDStr := c.Param("order_id")
+	orderID, err := uuid.Parse(orderIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid project id"})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid order id"})
 		return
 	}
 
-	// Verify project belongs to user
-	project, err := h.dbClient.GetProject(projectID, userID)
+	// Verify order belongs to user
+	order, err := h.dbClient.GetOrder(orderID, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{
-			Error:   "project not found",
+			Error:   "order not found",
 			Message: err.Error(),
 		})
 		return
@@ -122,48 +123,16 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 	}
 
 	// Publish upload_started event
-	h.realtimeClient.PublishProjectEvent(projectID, "upload_started",
-		supabase.UploadStartedPayload(projectID, len(files)))
+	h.realtimeClient.PublishOrderEvent(orderID, "upload_started",
+		supabase.UploadStartedPayload(orderID, len(files)))
 
 	// Update status
-	h.dbClient.UpdateProjectStatus(projectID, "uploading", 0)
+	h.dbClient.UpdateOrderStatus(orderID, "uploading", 0)
 
-	// Get filenames
-	filenames := make([]string, len(files))
-	for i, file := range files {
-		filenames[i] = file.Filename
-	}
-
-	// Get upload links from Imagen
-	var uploadLinks []string
-	err = h.imagenClient.RetryWithBackoff(func() error {
-		var err error
-		uploadLinks, err = h.imagenClient.GetUploadLinks(project.ImagenProjectUUID, filenames)
-		return err
-	}, 3)
-	if err != nil {
-		h.dbClient.UpdateProjectError(projectID, fmt.Sprintf("failed to get upload links: %v", err))
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-			Error:   "failed to get upload links",
-			Message: err.Error(),
-		})
-		return
-	}
-
-	// Validate upload links match file count
-	if len(uploadLinks) != len(files) {
-		h.dbClient.UpdateProjectError(projectID, fmt.Sprintf("upload links count mismatch: got %d links for %d files", len(uploadLinks), len(files)))
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-			Error:   "upload links mismatch",
-			Message: fmt.Sprintf("received %d upload links but have %d files", len(uploadLinks), len(files)),
-		})
-		return
-	}
-
-	// Upload files to Imagen
+	// Create brackets and upload files
 	uploadedFiles := make([]models.FileInfo, 0)
 	uploadErrors := make([]string, 0)
-	for i, file := range files {
+	for _, file := range files {
 		// Open file
 		src, err := file.Open()
 		if err != nil {
@@ -179,13 +148,43 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 			continue
 		}
 
-		// Upload to Imagen with retry
-		err = h.imagenClient.RetryWithBackoff(func() error {
-			return h.imagenClient.UploadFile(uploadLinks[i], data)
+		// Create bracket in AutoEnhance
+		var bracket *autoenhance.BracketCreatedOut
+		err = h.autoenhanceClient.RetryWithBackoff(func() error {
+			var err error
+			bracket, err = h.autoenhanceClient.CreateBracket(autoenhance.BracketIn{
+				Name:    file.Filename,
+				OrderID: order.AutoEnhanceOrderID,
+			})
+			return err
+		}, 3)
+		if err != nil {
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to create bracket: %v", file.Filename, err))
+			continue
+		}
+
+		// Upload to bracket upload URL
+		err = h.autoenhanceClient.RetryWithBackoff(func() error {
+			return h.autoenhanceClient.UploadFile(bracket.UploadURL, data)
 		}, 3)
 		if err != nil {
 			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to upload: %v", file.Filename, err))
 			continue
+		}
+
+		// Store bracket in database
+		bracketModel := &models.Bracket{
+			ID:         uuid.New(),
+			OrderID:    orderID,
+			BracketID:  bracket.BracketID,
+			Filename:   file.Filename,
+			IsUploaded: true,
+		}
+		if bracket.UploadURL != "" {
+			bracketModel.UploadURL = sql.NullString{String: bracket.UploadURL, Valid: true}
+		}
+		if err := h.dbClient.CreateBracket(bracketModel); err != nil {
+			// Log error but continue
 		}
 
 		uploadedFiles = append(uploadedFiles, models.FileInfo{
@@ -199,7 +198,7 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		if len(uploadErrors) > 0 {
 			errorMsg += ": " + fmt.Sprintf("%v", uploadErrors)
 		}
-		h.dbClient.UpdateProjectError(projectID, errorMsg)
+		h.dbClient.UpdateOrderError(orderID, errorMsg)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "failed to upload files",
 			Message: errorMsg,
@@ -208,15 +207,15 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 	}
 
 	// Update status
-	h.dbClient.UpdateProjectStatus(projectID, "uploaded", 0)
+	h.dbClient.UpdateOrderStatus(orderID, "uploaded", 0)
 
 	// Publish upload_completed event
-	h.realtimeClient.PublishProjectEvent(projectID, "upload_completed",
-		supabase.UploadCompletedPayload(projectID, len(uploadedFiles)))
+	h.realtimeClient.PublishOrderEvent(orderID, "upload_completed",
+		supabase.UploadCompletedPayload(orderID, len(uploadedFiles)))
 
 	c.JSON(http.StatusOK, models.UploadResponse{
-		ProjectID: projectID.String(),
-		Files:     uploadedFiles,
-		Status:    "uploaded",
+		OrderID: orderID.String(),
+		Files:   uploadedFiles,
+		Status:  "uploaded",
 	})
 }
