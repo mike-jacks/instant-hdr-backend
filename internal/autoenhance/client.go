@@ -11,6 +11,43 @@ import (
 	"time"
 )
 
+// AutoEnhanceTime is a custom time type that handles timestamps without timezone
+type AutoEnhanceTime struct {
+	time.Time
+}
+
+// UnmarshalJSON implements json.Unmarshaler for AutoEnhanceTime
+func (t *AutoEnhanceTime) UnmarshalJSON(data []byte) error {
+	// Remove quotes
+	str := strings.Trim(string(data), `"`)
+	
+	// Try parsing with various formats
+	formats := []string{
+		"2006-01-02T15:04:05.999999",           // Without timezone (AutoEnhance format)
+		"2006-01-02T15:04:05.999999Z",         // With Z
+		"2006-01-02T15:04:05.999999Z07:00",    // With timezone
+		"2006-01-02T15:04:05Z07:00",           // RFC3339
+		"2006-01-02T15:04:05",                 // Without microseconds
+		time.RFC3339,                           // Standard RFC3339
+		time.RFC3339Nano,                       // RFC3339 with nanoseconds
+	}
+	
+	var err error
+	for _, format := range formats {
+		t.Time, err = time.Parse(format, str)
+		if err == nil {
+			return nil
+		}
+	}
+	
+	return fmt.Errorf("failed to parse time: %s", str)
+}
+
+// MarshalJSON implements json.Marshaler for AutoEnhanceTime
+func (t AutoEnhanceTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.Time.Format(time.RFC3339))
+}
+
 type Client struct {
 	baseURL    string
 	apiKey     string
@@ -25,16 +62,16 @@ type OrderIn struct {
 
 // OrderOut represents the response from order operations
 type OrderOut struct {
-	OrderID       string    `json:"order_id"`
-	Name          string    `json:"name"`
-	Status        string    `json:"status"`
-	IsProcessing  bool      `json:"is_processing"`
-	IsMerging     bool      `json:"is_merging"`
-	IsDeleted     bool      `json:"is_deleted"`
-	TotalImages   float64   `json:"total_images"`
-	CreatedAt     time.Time `json:"created_at"`
-	LastUpdatedAt time.Time `json:"last_updated_at"`
-	Images        []ImageOut `json:"images"`
+	OrderID       string         `json:"order_id"`
+	Name          string         `json:"name"`
+	Status        string         `json:"status"`
+	IsProcessing  bool           `json:"is_processing"`
+	IsMerging     bool           `json:"is_merging"`
+	IsDeleted     bool           `json:"is_deleted"`
+	TotalImages   float64        `json:"total_images"`
+	CreatedAt     AutoEnhanceTime `json:"created_at"`
+	LastUpdatedAt AutoEnhanceTime `json:"last_updated_at"`
+	Images        []ImageOut     `json:"images"`
 }
 
 // OrdersOut represents the response from listing orders
@@ -109,8 +146,8 @@ type OrderHDRProcessOut struct {
 	IsMerging     bool       `json:"is_merging"`
 	IsDeleted     bool       `json:"is_deleted"`
 	TotalImages   float64    `json:"total_images"`
-	CreatedAt     time.Time  `json:"created_at"`
-	LastUpdatedAt time.Time  `json:"last_updated_at"`
+	CreatedAt     AutoEnhanceTime `json:"created_at"`
+	LastUpdatedAt AutoEnhanceTime `json:"last_updated_at"`
 	Images        []ImageOut `json:"images"`
 }
 
