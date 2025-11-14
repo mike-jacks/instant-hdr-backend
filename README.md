@@ -125,10 +125,6 @@ All endpoints (except `/health` and `/api/v1/webhooks/autoenhance`) require JWT 
 - `GET /api/v1/orders/:order_id/status` - Get order status (optional/fallback)
 - `GET /api/v1/orders/:order_id/files` - List order files
 
-### Profiles
-
-- `GET /api/v1/profiles` - Get available enhance_type options (AutoEnhance doesn't use profiles)
-
 ### Webhooks
 
 - `POST /api/v1/webhooks/autoenhance` - AutoEnhance AI webhook endpoint (no auth, uses token authentication)

@@ -45,14 +45,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/profiles": {
+        "/orders": {
             "get": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "Returns a list of available editing profiles for the authenticated user. Each profile has a profile_key (integer) that should be used in process requests. Use the profile_key value when calling the /projects/{project_id}/process endpoint.",
+                "description": "Returns a list of all orders for the authenticated user",
                 "consumes": [
                     "application/json"
                 ],
@@ -60,57 +60,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "profiles"
+                    "orders"
                 ],
-                "summary": "Get user profiles",
-                "responses": {
-                    "200": {
-                        "description": "Array of profile objects. Each object contains: profile_key (int), profile_name (string), profile_type (string: Personal/Talent/Shared), image_type (string: RAW/JPG)",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "object"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/projects": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Returns a list of all projects for the authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "projects"
-                ],
-                "summary": "List all projects",
+                "summary": "List all orders",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ProjectListResponse"
+                            "$ref": "#/definitions/models.OrderListResponse"
                         }
                     },
                     "401": {
@@ -133,7 +90,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Creates a new Imagen AI project for a listing (real estate shoot). Returns the project ID and Imagen project UUID.",
+                "description": "Creates a new AutoEnhance AI order for a listing (real estate shoot). Returns the order ID and AutoEnhance order ID.",
                 "consumes": [
                     "application/json"
                 ],
@@ -141,16 +98,16 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "projects"
+                    "orders"
                 ],
-                "summary": "Create a new project",
+                "summary": "Create a new order",
                 "parameters": [
                     {
-                        "description": "Project metadata (optional)",
+                        "description": "Order metadata (optional)",
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/models.CreateProjectRequest"
+                            "$ref": "#/definitions/models.CreateOrderRequest"
                         }
                     }
                 ],
@@ -158,7 +115,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ProjectResponse"
+                            "$ref": "#/definitions/models.OrderResponse"
                         }
                     },
                     "400": {
@@ -182,14 +139,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/projects/{project_id}": {
+        "/orders/{order_id}": {
             "get": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "Returns detailed information about a specific project",
+                "description": "Returns detailed information about a specific order",
                 "consumes": [
                     "application/json"
                 ],
@@ -197,14 +154,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "projects"
+                    "orders"
                 ],
-                "summary": "Get project details",
+                "summary": "Get order details",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID (UUID)",
-                        "name": "project_id",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
                         "in": "path",
                         "required": true
                     }
@@ -213,7 +170,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ProjectResponse"
+                            "$ref": "#/definitions/models.OrderResponse"
                         }
                     },
                     "400": {
@@ -242,7 +199,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Deletes a project, including associated Imagen AI project and files from Supabase Storage",
+                "description": "Deletes an order, including associated AutoEnhance AI order and files from Supabase Storage",
                 "consumes": [
                     "application/json"
                 ],
@@ -250,14 +207,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "projects"
+                    "orders"
                 ],
-                "summary": "Delete a project",
+                "summary": "Delete an order",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID (UUID)",
-                        "name": "project_id",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
                         "in": "path",
                         "required": true
                     }
@@ -299,14 +256,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/projects/{project_id}/files": {
+        "/orders/{order_id}/files": {
             "get": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "Returns a list of all processed files associated with a project, including their Supabase Storage URLs",
+                "description": "Returns a list of all processed files associated with an order, including their Supabase Storage URLs",
                 "consumes": [
                     "application/json"
                 ],
@@ -316,12 +273,12 @@ const docTemplate = `{
                 "tags": [
                     "files"
                 ],
-                "summary": "Get project files",
+                "summary": "Get order files",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID (UUID)",
-                        "name": "project_id",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
                         "in": "path",
                         "required": true
                     }
@@ -354,14 +311,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/projects/{project_id}/process": {
+        "/orders/{order_id}/process": {
             "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "Initiates HDR processing and merging of uploaded images using Imagen AI. If profile_key is not provided, the system will automatically search for and use a profile named \"NATURAL HOME - JPEG\" (or similar). HDR merge is enabled by default for real estate photography.",
+                "description": "Initiates HDR processing and merging of uploaded images using AutoEnhance AI. Groups brackets into images and processes them with the specified enhancement options.",
                 "consumes": [
                     "application/json"
                 ],
@@ -375,13 +332,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID (UUID)",
-                        "name": "project_id",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Processing options. profile_key is optional - if not provided, will auto-select 'NATURAL HOME - JPEG' profile. profile_key should be an integer (can be sent as string, will be converted). Get available profiles from /profiles endpoint.",
+                        "description": "Processing options. enhance_type defaults to 'property' for real estate photography.",
                         "name": "request",
                         "in": "body",
                         "schema": {
@@ -423,14 +380,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/projects/{project_id}/status": {
+        "/orders/{order_id}/status": {
             "get": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "Returns the current status and progress of a project. For real-time updates, connect to Supabase Realtime.",
+                "description": "Returns the current status and progress of an order. For real-time updates, connect to Supabase Realtime.",
                 "consumes": [
                     "application/json"
                 ],
@@ -440,12 +397,12 @@ const docTemplate = `{
                 "tags": [
                     "status"
                 ],
-                "summary": "Get project status",
+                "summary": "Get order status",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID (UUID)",
-                        "name": "project_id",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
                         "in": "path",
                         "required": true
                     }
@@ -478,14 +435,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/projects/{project_id}/upload": {
+        "/orders/{order_id}/upload": {
             "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "Uploads multiple bracketed images to an Imagen AI project. All images in a single upload are expected to be bracketed images of the same shot.",
+                "description": "Uploads multiple bracketed images to an AutoEnhance AI order. All images in a single upload are expected to be bracketed images of the same shot.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -495,12 +452,12 @@ const docTemplate = `{
                 "tags": [
                     "upload"
                 ],
-                "summary": "Upload images to project",
+                "summary": "Upload images to order",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project ID (UUID)",
-                        "name": "project_id",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
                         "in": "path",
                         "required": true
                     },
@@ -546,11 +503,11 @@ const docTemplate = `{
                 }
             }
         },
-        "/webhooks/imagen": {
+        "/webhooks/autoenhance": {
             "post": {
-                "description": "Receives webhook callbacks from Imagen AI for processing status updates. Supports challenge parameter for webhook setup. Uses HMAC-SHA256 signature verification.",
+                "description": "Receives webhook callbacks from AutoEnhance AI for processing status updates. Uses authentication token verification.",
                 "consumes": [
-                    "text/xml"
+                    "application/json"
                 ],
                 "produces": [
                     "application/json"
@@ -558,18 +515,12 @@ const docTemplate = `{
                 "tags": [
                     "webhooks"
                 ],
-                "summary": "Imagen AI webhook endpoint",
+                "summary": "AutoEnhance AI webhook endpoint",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Challenge string for webhook verification",
-                        "name": "challenge",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "HMAC-SHA256 signature",
-                        "name": "X-Imagen-Webhook",
+                        "description": "Authentication token (configured in AutoEnhance web app)",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
                     }
@@ -601,11 +552,11 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.CreateProjectRequest": {
+        "models.CreateOrderRequest": {
             "type": "object",
             "properties": {
                 "metadata": {
-                    "description": "Optional metadata to store with project",
+                    "description": "Optional metadata to store with order",
                     "type": "object",
                     "additionalProperties": true
                 }
@@ -678,17 +629,76 @@ const docTemplate = `{
                 }
             }
         },
+        "models.OrderListResponse": {
+            "type": "object",
+            "properties": {
+                "orders": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.OrderSummary"
+                    }
+                }
+            }
+        },
+        "models.OrderResponse": {
+            "type": "object",
+            "properties": {
+                "autoenhance_order_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "progress": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.OrderSummary": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "progress": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "models.ProcessRequest": {
             "type": "object",
             "properties": {
-                "ai_tools": {
-                    "description": "Deprecated: not used in current Imagen API",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "enhance_type": {
+                    "description": "EnhanceType specifies the type of enhancement to apply\nOptions: \"property\", \"property_usa\", \"warm\", \"neutral\", \"modern\"\nDefault: \"property\" for real estate photography",
+                    "type": "string",
+                    "example": "property"
                 },
-                "hdr_merge": {
+                "lens_correction": {
                     "type": "boolean",
                     "example": true
                 },
@@ -697,90 +707,36 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": true
                 },
-                "profile_key": {
-                    "description": "ProfileKey is an integer that identifies the editing profile to use.\nGet available profiles from GET /profiles endpoint.\nCan be sent as string (e.g., \"123\") and will be converted to integer.",
+                "privacy": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "sky_replacement": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "upscale": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "vertical_correction": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "window_pull_type": {
+                    "description": "\"NONE\", \"ONLY_WINDOWS\", \"WINDOWS_WITH_SKIES\"",
                     "type": "string",
-                    "example": "123"
+                    "example": "ONLY_WINDOWS"
                 }
             }
         },
         "models.ProcessResponse": {
             "type": "object",
             "properties": {
-                "edit_id": {
-                    "type": "string"
-                },
-                "project_id": {
+                "order_id": {
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.ProjectListResponse": {
-            "type": "object",
-            "properties": {
-                "projects": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.ProjectSummary"
-                    }
-                }
-            }
-        },
-        "models.ProjectResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "edit_id": {
-                    "type": "string"
-                },
-                "error_message": {
-                    "type": "string"
-                },
-                "imagen_project_uuid": {
-                    "type": "string"
-                },
-                "metadata": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "profile_key": {
-                    "type": "string"
-                },
-                "progress": {
-                    "type": "integer"
-                },
-                "project_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.ProjectSummary": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "progress": {
-                    "type": "integer"
-                },
-                "project_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -788,11 +744,11 @@ const docTemplate = `{
         "models.StatusResponse": {
             "type": "object",
             "properties": {
+                "order_id": {
+                    "type": "string"
+                },
                 "progress": {
                     "type": "integer"
-                },
-                "project_id": {
-                    "type": "string"
                 },
                 "status": {
                     "type": "string"
@@ -811,7 +767,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.FileInfo"
                     }
                 },
-                "project_id": {
+                "order_id": {
                     "type": "string"
                 },
                 "status": {
@@ -837,7 +793,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "Instant HDR Backend API",
-	Description:      "Backend API for processing bracketed images with Imagen AI HDR merging. This API handles project creation, image uploads, HDR processing, and real-time status updates via Supabase Realtime.",
+	Description:      "Backend API for processing bracketed images with AutoEnhance AI HDR merging. This API handles order creation, image uploads, HDR processing, and real-time status updates via Supabase Realtime.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

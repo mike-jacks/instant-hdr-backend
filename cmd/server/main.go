@@ -133,7 +133,6 @@ func main() {
 	processHandler := handlers.NewProcessHandler(autoenhanceClient, dbClient, realtimeClient)
 	statusHandler := handlers.NewStatusHandler(dbClient)
 	filesHandler := handlers.NewFilesHandler(dbClient)
-	profilesHandler := handlers.NewProfilesHandler()
 
 	// Webhook handler requires storage service
 	if storageService == nil {
@@ -172,9 +171,6 @@ func main() {
 	// Status and files
 	api.GET("/orders/:order_id/status", statusHandler.GetStatus)
 	api.GET("/orders/:order_id/files", filesHandler.GetFiles)
-
-	// Profiles (returns enhance_type options)
-	api.GET("/profiles", profilesHandler.GetProfiles)
 
 	// Webhook (no auth, uses token authentication)
 	router.POST("/api/v1/webhooks/autoenhance", webhookHandler.HandleWebhook)
