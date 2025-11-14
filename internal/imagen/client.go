@@ -456,17 +456,22 @@ func (c *Client) GetUserProfiles() ([]struct {
 		return nil, fmt.Errorf("failed to get user profiles: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	var profiles []struct {
-		ProfileKey  int    `json:"profile_key"`
-		ProfileName string `json:"profile_name"`
-		ProfileType string `json:"profile_type"`
-		ImageType   string `json:"image_type"`
+	// Response has data wrapper with profiles array
+	var response struct {
+		Data struct {
+			Profiles []struct {
+				ProfileKey  int    `json:"profile_key"`
+				ProfileName string `json:"profile_name"`
+				ProfileType string `json:"profile_type"`
+				ImageType   string `json:"image_type"`
+			} `json:"profiles"`
+		} `json:"data"`
 	}
-	if err := json.Unmarshal(body, &profiles); err != nil {
+	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w, body: %s", err, string(body))
 	}
 
-	return profiles, nil
+	return response.Data.Profiles, nil
 }
 
 func (c *Client) DeleteProject(projectUUID string) error {
