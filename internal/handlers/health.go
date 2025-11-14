@@ -16,7 +16,8 @@ import (
 // @Success     200 {object} models.HealthResponse
 // @Router      /health [get]
 func HealthHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, models.HealthResponse{
+	response := models.HealthResponse{
 		Status: "ok",
-	})
+	}
+	c.JSON(http.StatusOK, response)
 }
