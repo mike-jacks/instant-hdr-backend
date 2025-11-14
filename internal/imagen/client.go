@@ -29,10 +29,12 @@ type UploadLinkRequest struct {
 }
 
 type UploadLinkResponse struct {
-	FilesList []struct {
-		FileName   string `json:"file_name"`
-		UploadLink string `json:"upload_link"`
-	} `json:"files_list"`
+	Data struct {
+		FilesList []struct {
+			FileName   string `json:"file_name"`
+			UploadLink string `json:"upload_link"`
+		} `json:"files_list"`
+	} `json:"data"`
 }
 
 type EditRequest struct {
@@ -149,18 +151,29 @@ func (c *Client) GetUploadLinks(projectUUID string, filenames []string) ([]strin
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to get upload links: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
 	var result UploadLinkResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w, body: %s", err, string(body))
 	}
 
-	uploadLinks := make([]string, len(result.FilesList))
-	for i, file := range result.FilesList {
+	if len(result.Data.FilesList) == 0 {
+		return nil, fmt.Errorf("received empty files_list in response, body: %s", string(body))
+	}
+
+	uploadLinks := make([]string, len(result.Data.FilesList))
+	for i, file := range result.Data.FilesList {
+		if file.UploadLink == "" {
+			return nil, fmt.Errorf("upload_link is empty for file %s in response, body: %s", file.FileName, string(body))
+		}
 		uploadLinks[i] = file.UploadLink
 	}
 

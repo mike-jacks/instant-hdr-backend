@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -77,8 +78,8 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		return
 	}
 
-	// Parse multipart form
-	form, err := c.MultipartForm()
+	// Set max memory for multipart form (32MB)
+	err = c.Request.ParseMultipartForm(32 << 20)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error:   "failed to parse multipart form",
@@ -87,9 +88,36 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		return
 	}
 
-	files := form.File["images"]
+	// Parse multipart form
+	form := c.Request.MultipartForm
+	if form == nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "failed to parse multipart form",
+			Message: "multipart form is nil",
+		})
+		return
+	}
+
+	// Try multiple common field names
+	var files []*multipart.FileHeader
+	fieldNames := []string{"images", "image", "files", "file", "photos", "photo"}
+	for _, fieldName := range fieldNames {
+		if f := form.File[fieldName]; len(f) > 0 {
+			files = f
+			break
+		}
+	}
+
 	if len(files) == 0 {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "no files uploaded"})
+		// Get all available field names for debugging
+		availableFields := make([]string, 0, len(form.File))
+		for fieldName := range form.File {
+			availableFields = append(availableFields, fieldName)
+		}
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "no files uploaded",
+			Message: fmt.Sprintf("please provide files with one of these field names: %v. Available fields in request: %v", fieldNames, availableFields),
+		})
 		return
 	}
 
@@ -122,12 +150,24 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		return
 	}
 
+	// Validate upload links match file count
+	if len(uploadLinks) != len(files) {
+		h.dbClient.UpdateProjectError(projectID, fmt.Sprintf("upload links count mismatch: got %d links for %d files", len(uploadLinks), len(files)))
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "upload links mismatch",
+			Message: fmt.Sprintf("received %d upload links but have %d files", len(uploadLinks), len(files)),
+		})
+		return
+	}
+
 	// Upload files to Imagen
 	uploadedFiles := make([]models.FileInfo, 0)
+	uploadErrors := make([]string, 0)
 	for i, file := range files {
 		// Open file
 		src, err := file.Open()
 		if err != nil {
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to open: %v", file.Filename, err))
 			continue
 		}
 
@@ -135,6 +175,7 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		data, err := io.ReadAll(src)
 		src.Close()
 		if err != nil {
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to read: %v", file.Filename, err))
 			continue
 		}
 
@@ -143,6 +184,7 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 			return h.imagenClient.UploadFile(uploadLinks[i], data)
 		}, 3)
 		if err != nil {
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: failed to upload: %v", file.Filename, err))
 			continue
 		}
 
@@ -153,9 +195,14 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 	}
 
 	if len(uploadedFiles) == 0 {
-		h.dbClient.UpdateProjectError(projectID, "failed to upload any files")
+		errorMsg := "failed to upload any files"
+		if len(uploadErrors) > 0 {
+			errorMsg += ": " + fmt.Sprintf("%v", uploadErrors)
+		}
+		h.dbClient.UpdateProjectError(projectID, errorMsg)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-			Error: "failed to upload files",
+			Error:   "failed to upload files",
+			Message: errorMsg,
 		})
 		return
 	}
