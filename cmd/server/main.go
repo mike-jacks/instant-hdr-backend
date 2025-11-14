@@ -151,10 +151,14 @@ func main() {
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// Health check (no auth)
+	// Health check (no auth) - available at root level
 	router.GET("/health", handlers.HealthHandler)
 
-	// API routes
+	// API routes - public endpoints (no auth)
+	apiPublic := router.Group("/api/v1")
+	apiPublic.GET("/health", handlers.HealthHandler)
+
+	// API routes - protected endpoints (with auth)
 	api := router.Group("/api/v1")
 	api.Use(middleware.AuthMiddleware(cfg))
 
