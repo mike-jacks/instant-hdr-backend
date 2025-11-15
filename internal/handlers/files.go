@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -174,19 +175,42 @@ func (h *FilesHandler) GetBrackets(c *gin.Context) {
 			CreatedAt:  bracket.CreatedAt,
 		}
 
-		// If we have data from AutoEnhance, use their status and metadata (more accurate)
+		// Start with our database metadata (includes group_id)
+		metadata := make(map[string]interface{})
+		if len(bracket.Metadata) > 0 {
+			if err := json.Unmarshal(bracket.Metadata, &metadata); err == nil {
+				// Metadata parsed successfully
+			}
+		}
+
+		// If we have data from AutoEnhance, include ALL their fields
 		if aeBracket, exists := autoenhanceBrackets[bracket.BracketID]; exists {
+			// Include all AutoEnhance fields
 			response.IsUploaded = aeBracket.IsUploaded
+			response.OrderID = aeBracket.OrderID
+			response.Name = aeBracket.Name
 			
 			// Include image_id if available
 			if aeBracket.ImageID != "" {
 				response.ImageID = aeBracket.ImageID
 			}
 			
-			// Include full metadata from AutoEnhance
+			// Merge AutoEnhance metadata with our database metadata
+			// Our metadata (with group_id) takes precedence for grouping info
 			if aeBracket.Metadata != nil {
-				response.Metadata = aeBracket.Metadata
+				for k, v := range aeBracket.Metadata {
+					// Only add AutoEnhance fields that we don't already have
+					// This preserves our group_id from database
+					if _, exists := metadata[k]; !exists {
+						metadata[k] = v
+					}
+				}
 			}
+		}
+
+		// Set merged metadata (includes group_id from our database)
+		if len(metadata) > 0 {
+			response.Metadata = metadata
 		}
 
 		bracketResponses[i] = response

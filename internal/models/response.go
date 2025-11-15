@@ -87,13 +87,15 @@ type BracketsResponse struct {
 }
 
 type BracketResponse struct {
-	ID         string                 `json:"id"`
-	BracketID  string                 `json:"bracket_id"`
-	Filename   string                 `json:"filename"`
+	ID         string                 `json:"id"`          // Our internal database ID
+	BracketID  string                 `json:"bracket_id"`  // AutoEnhance bracket ID
+	OrderID    string                 `json:"order_id,omitempty"` // AutoEnhance order ID
+	Name       string                 `json:"name,omitempty"`     // AutoEnhance bracket name
+	Filename   string                 `json:"filename"`    // Original filename (from upload)
 	IsUploaded bool                   `json:"is_uploaded"`
 	CreatedAt  time.Time              `json:"created_at"`
-	ImageID    string                 `json:"image_id,omitempty"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
+	ImageID    string                 `json:"image_id,omitempty"` // AutoEnhance image ID (if processed)
+	Metadata   map[string]interface{} `json:"metadata,omitempty"` // Includes group_id and all AutoEnhance metadata
 }
 
 type FileResponse struct {

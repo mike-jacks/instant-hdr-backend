@@ -959,26 +959,39 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "bracket_id": {
+                    "description": "AutoEnhance bracket ID",
                     "type": "string"
                 },
                 "created_at": {
                     "type": "string"
                 },
                 "filename": {
+                    "description": "Original filename (from upload)",
                     "type": "string"
                 },
                 "id": {
+                    "description": "Our internal database ID",
                     "type": "string"
                 },
                 "image_id": {
+                    "description": "AutoEnhance image ID (if processed)",
                     "type": "string"
                 },
                 "is_uploaded": {
                     "type": "boolean"
                 },
                 "metadata": {
+                    "description": "Includes group_id and all AutoEnhance metadata",
                     "type": "object",
                     "additionalProperties": true
+                },
+                "name": {
+                    "description": "AutoEnhance bracket name",
+                    "type": "string"
+                },
+                "order_id": {
+                    "description": "AutoEnhance order ID",
+                    "type": "string"
                 }
             }
         },
