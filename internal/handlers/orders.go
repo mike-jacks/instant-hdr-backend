@@ -207,9 +207,32 @@ func (h *OrdersHandler) ListOrders(c *gin.Context) {
 			UpdatedAt: o.UpdatedAt,
 		}
 
-		// Use cached name from database (no API call needed!)
-		if o.Name.Valid {
+		// Use cached name from database if available and not empty
+		if o.Name.Valid && o.Name.String != "" {
 			summary.Name = o.Name.String
+		} else if h.autoenhanceClient != nil {
+			// If name not cached or is empty, fetch from AutoEnhance and sync to DB
+			autoenhanceOrder, err := h.autoenhanceClient.GetOrder(o.ID.String())
+			if err == nil && autoenhanceOrder != nil && autoenhanceOrder.Name != "" {
+				summary.Name = autoenhanceOrder.Name
+				// Sync to database for future requests
+				var lastUpdated *time.Time
+				if !autoenhanceOrder.LastUpdatedAt.Time.IsZero() {
+					lastUpdated = &autoenhanceOrder.LastUpdatedAt.Time
+				}
+				go func(orderID uuid.UUID) {
+					_ = h.dbClient.SyncAutoEnhanceOrderData(
+						orderID,
+						autoenhanceOrder.Name,
+						autoenhanceOrder.Status,
+						autoenhanceOrder.IsProcessing,
+						autoenhanceOrder.IsMerging,
+						autoenhanceOrder.IsDeleted,
+						int(autoenhanceOrder.TotalImages),
+						lastUpdated,
+					)
+				}(o.ID)
+			}
 		}
 
 		summaries[i] = summary
