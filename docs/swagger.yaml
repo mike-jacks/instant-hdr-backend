@@ -27,12 +27,10 @@ definitions:
     type: object
   models.CreateOrderRequest:
     properties:
-      metadata:
-        additionalProperties: true
-        description: Optional metadata to store with order
-        type: object
       name:
-        description: Order name/description (e.g., "123 Main St - Living Room")
+        description: |-
+          Order name/description (e.g., "123 Main St - Living Room")
+          If not provided, defaults to "Order"
         example: Property Shoot - 123 Main St
         type: string
     type: object
@@ -497,9 +495,9 @@ paths:
       consumes:
       - application/json
       description: Creates a new AutoEnhance AI order for a listing (real estate shoot).
-        Returns the order ID and AutoEnhance order ID.
+        You can optionally provide a custom name for the order.
       parameters:
-      - description: Order metadata (optional)
+      - description: Order name (optional, defaults to 'Order')
         in: body
         name: request
         schema:

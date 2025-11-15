@@ -90,7 +90,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Creates a new AutoEnhance AI order for a listing (real estate shoot). Returns the order ID and AutoEnhance order ID.",
+                "description": "Creates a new AutoEnhance AI order for a listing (real estate shoot). You can optionally provide a custom name for the order.",
                 "consumes": [
                     "application/json"
                 ],
@@ -103,7 +103,7 @@ const docTemplate = `{
                 "summary": "Create a new order",
                 "parameters": [
                     {
-                        "description": "Order metadata (optional)",
+                        "description": "Order name (optional, defaults to 'Order')",
                         "name": "request",
                         "in": "body",
                         "schema": {
@@ -996,13 +996,8 @@ const docTemplate = `{
         "models.CreateOrderRequest": {
             "type": "object",
             "properties": {
-                "metadata": {
-                    "description": "Optional metadata to store with order",
-                    "type": "object",
-                    "additionalProperties": true
-                },
                 "name": {
-                    "description": "Order name/description (e.g., \"123 Main St - Living Room\")",
+                    "description": "Order name/description (e.g., \"123 Main St - Living Room\")\nIf not provided, defaults to \"Order\"",
                     "type": "string",
                     "example": "Property Shoot - 123 Main St"
                 }

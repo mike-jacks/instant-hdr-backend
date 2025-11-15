@@ -29,12 +29,12 @@ func NewOrdersHandler(autoenhanceClient *autoenhance.Client, dbClient *supabase.
 
 // CreateOrder godoc
 // @Summary     Create a new order
-// @Description Creates a new AutoEnhance AI order for a listing (real estate shoot). Returns the order ID and AutoEnhance order ID.
+// @Description Creates a new AutoEnhance AI order for a listing (real estate shoot). You can optionally provide a custom name for the order.
 // @Tags        orders
 // @Accept      json
 // @Produce     json
 // @Security    Bearer
-// @Param       request body models.CreateOrderRequest false "Order metadata (optional)"
+// @Param       request body models.CreateOrderRequest false "Order name (optional, defaults to 'Order')"
 // @Success     200 {object} models.OrderResponse
 // @Failure     400 {object} models.ErrorResponse
 // @Failure     401 {object} models.ErrorResponse
@@ -59,10 +59,8 @@ func (h *OrdersHandler) CreateOrder(c *gin.Context) {
 	}
 
 	var req models.CreateOrderRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		// If no JSON body, use empty metadata
-		req.Metadata = make(map[string]interface{})
-	}
+	// JSON body is optional - if not provided or invalid, req will just have empty Name
+	_ = c.ShouldBindJSON(&req)
 
 	// Use provided name or default
 	orderName := req.Name
@@ -99,7 +97,7 @@ func (h *OrdersHandler) CreateOrder(c *gin.Context) {
 	}
 
 	// Create order in database using AutoEnhance's generated order_id as our primary key
-	order, err := h.dbClient.CreateOrder(orderID, userID, req.Metadata)
+	order, err := h.dbClient.CreateOrder(orderID, userID, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "failed to create order",

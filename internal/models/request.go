@@ -2,9 +2,8 @@ package models
 
 type CreateOrderRequest struct {
 	// Order name/description (e.g., "123 Main St - Living Room")
+	// If not provided, defaults to "Order"
 	Name string `json:"name,omitempty" example:"Property Shoot - 123 Main St"`
-	// Optional metadata to store with order
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type ProcessRequest struct {
