@@ -18,6 +18,11 @@ type StorageService struct {
 	realtimeClient    *supabase.RealtimeClient
 }
 
+// GetRealtimeClient returns the realtime client for publishing events
+func (s *StorageService) GetRealtimeClient() *supabase.RealtimeClient {
+	return s.realtimeClient
+}
+
 func NewStorageService(
 	autoenhanceClient *autoenhance.Client,
 	dbClient *supabase.DatabaseClient,

@@ -102,7 +102,7 @@ func main() {
 		log.Fatalf("Failed to initialize storage client: %v", err)
 	}
 
-	realtimeClient := supabase.NewRealtimeClient(supabaseClient.Supabase)
+	realtimeClient := supabase.NewRealtimeClient(supabaseClient.Supabase, cfg.SupabaseURL, cfg.SupabasePublishableKey)
 
 	// Create database client for direct queries
 	var dbClient *supabase.DatabaseClient

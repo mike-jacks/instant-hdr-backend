@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"instant-hdr-backend/internal/config"
 	"instant-hdr-backend/internal/models"
 	"instant-hdr-backend/internal/services"
+	"instant-hdr-backend/internal/supabase"
 )
 
 type WebhookHandler struct {
@@ -95,6 +97,29 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 
 	// Process image_processed events
 	if event.Event == "image_processed" {
+		// Parse order ID to UUID for publishing
+		orderID, err := uuid.Parse(event.OrderID)
+		if err == nil && h.storageService != nil {
+			// Publish EVERY webhook event to frontend immediately
+			// Frontend can track individual image processing progress
+			webhookPayload := supabase.WebhookEventPayload(
+				event.OrderID,
+				event.ImageID,
+				event.Error,
+				event.OrderIsProcessing,
+			)
+			
+			// Publish to realtime channel (async, don't block webhook response)
+			go func() {
+				_ = h.storageService.GetRealtimeClient().PublishOrderEvent(
+					orderID,
+					"webhook_image_processed",
+					webhookPayload,
+				)
+			}()
+		}
+
+		// Handle business logic based on webhook data
 		if event.Error {
 			// Image processing failed
 			go h.storageService.HandleProcessingFailed(event.OrderID, "image processing failed")
@@ -103,7 +128,7 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 			go h.storageService.HandleProcessingCompleted(event.OrderID, event.ImageID)
 		}
 		// If order_is_processing is true, more images are still being processed
-		// We'll wait for the final event when order_is_processing is false
+		// Frontend will receive individual events for each image
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})

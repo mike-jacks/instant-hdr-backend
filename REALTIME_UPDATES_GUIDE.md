@@ -182,6 +182,25 @@ const channel = supabase
 
 ---
 
+### Event: `webhook_image_processed` ⭐ NEW
+
+**When:** Every time AutoEnhance processes an image (from webhook)  
+**Payload:**
+
+```javascript
+{
+  order_id: "uuid",
+  image_id: "img_abc123",
+  error: false,
+  order_is_processing: true,  // true = more images coming, false = all done
+  timestamp: "2025-11-15T..."
+}
+```
+
+**This event fires for EVERY image** as it's processed, allowing real-time progress tracking!
+
+---
+
 ### Event: `processing_completed` ⭐
 
 **When:** Processing finished, previews downloaded  
