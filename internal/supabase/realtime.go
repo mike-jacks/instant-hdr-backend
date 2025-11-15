@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -37,12 +38,15 @@ func (r *RealtimeClient) PublishEvent(channel string, event string, payload map[
 	// Use service role key for server-side publishing
 	if r.serviceRoleKey == "" {
 		// If no service role key available, skip publishing (graceful degradation)
+		log.Printf("[Realtime] Skipping publish: service role key not configured (channel: %s, event: %s)", channel, event)
 		return nil
 	}
 
 	if r.supabaseURL == "" {
 		return fmt.Errorf("supabase URL is not configured")
 	}
+
+	log.Printf("[Realtime] Publishing event: channel=%s, event=%s", channel, event)
 
 	// Add timestamp to payload
 	if payload == nil {
@@ -91,6 +95,7 @@ func (r *RealtimeClient) PublishEvent(channel string, event string, payload map[
 
 	resp, err := r.httpClient.Do(req)
 	if err != nil {
+		log.Printf("[Realtime] Failed to send request: channel=%s, event=%s, error=%v", channel, event, err)
 		return fmt.Errorf("failed to send request to %s: %w", url, err)
 	}
 	defer resp.Body.Close()
@@ -101,6 +106,8 @@ func (r *RealtimeClient) PublishEvent(channel string, event string, payload map[
 	responseBody := string(bodyBytes[:n])
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		log.Printf("[Realtime] Broadcast failed: channel=%s, event=%s, status=%d, body=%s",
+			channel, event, resp.StatusCode, responseBody)
 		return fmt.Errorf("realtime broadcast failed: status %d, channel: %s, event: %s, body: %s. "+
 			"Verify: 1) SUPABASE_URL is correct (should be https://<project-ref>.supabase.co), "+
 			"2) SUPABASE_SERVICE_ROLE_KEY is correct (should start with 'eyJ...' or 'sb_...'), "+
@@ -108,6 +115,8 @@ func (r *RealtimeClient) PublishEvent(channel string, event string, payload map[
 			resp.StatusCode, channel, event, responseBody)
 	}
 
+	log.Printf("[Realtime] Successfully published event: channel=%s, event=%s, status=%d",
+		channel, event, resp.StatusCode)
 	return nil
 }
 
