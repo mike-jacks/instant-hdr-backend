@@ -133,6 +133,7 @@ func main() {
 	processHandler := handlers.NewProcessHandler(autoenhanceClient, dbClient, realtimeClient)
 	statusHandler := handlers.NewStatusHandler(dbClient, autoenhanceClient)
 	filesHandler := handlers.NewFilesHandler(dbClient, autoenhanceClient)
+	imagesHandler := handlers.NewImagesHandler(autoenhanceClient, dbClient, storageClient)
 
 	// Webhook handler requires storage service
 	if storageService == nil {
@@ -177,6 +178,10 @@ func main() {
 	api.GET("/orders/:order_id/status", statusHandler.GetStatus)
 	api.GET("/orders/:order_id/files", filesHandler.GetFiles) // Processed files only
 	api.GET("/orders/:order_id/brackets", filesHandler.GetBrackets) // Uploaded brackets
+
+	// Images - list and download processed images
+	api.GET("/orders/:order_id/images", imagesHandler.ListImages)
+	api.POST("/orders/:order_id/images/:image_id/download", imagesHandler.DownloadImage)
 
 	// Webhook (no auth, uses token authentication)
 	router.POST("/api/v1/webhooks/autoenhance", webhookHandler.HandleWebhook)

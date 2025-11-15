@@ -366,6 +366,144 @@ const docTemplate = `{
                 }
             }
         },
+        "/orders/{order_id}/images": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns a list of all processed images for an order with their download status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "images"
+                ],
+                "summary": "List processed images",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ImagesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{order_id}/images/{image_id}/download": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Downloads a processed image from AutoEnhance and stores it in Supabase Storage. Watermark defaults to true (FREE). Set watermark=false to download unwatermarked (COSTS 1 CREDIT). Supports quality presets (thumbnail/preview/medium/high) or custom dimensions.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "images"
+                ],
+                "summary": "Download processed image to Supabase Storage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Image ID from AutoEnhance",
+                        "name": "image_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Download options - quality presets or custom dimensions",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.DownloadImageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.DownloadImageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/orders/{order_id}/process": {
             "post": {
                 "security": [
@@ -717,6 +855,68 @@ const docTemplate = `{
                 }
             }
         },
+        "instant-hdr-backend_internal_models.DownloadImageRequest": {
+            "type": "object",
+            "properties": {
+                "format": {
+                    "description": "\"jpeg\", \"png\", \"webp\" (default: jpeg)",
+                    "type": "string"
+                },
+                "max_width": {
+                    "description": "Custom options (used when quality=\"custom\")",
+                    "type": "integer"
+                },
+                "quality": {
+                    "description": "Preset quality options (recommended)",
+                    "type": "string"
+                },
+                "scale": {
+                    "description": "Scale factor (0.5 = 50%)",
+                    "type": "number"
+                },
+                "watermark": {
+                    "description": "Watermark (optional, defaults to true)\ntrue = FREE download with watermark\nfalse = COSTS 1 CREDIT (unwatermarked)",
+                    "type": "boolean"
+                }
+            }
+        },
+        "instant-hdr-backend_internal_models.DownloadImageResponse": {
+            "type": "object",
+            "properties": {
+                "credit_used": {
+                    "description": "true if this download cost a credit",
+                    "type": "boolean"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "format": {
+                    "description": "\"jpeg\", \"png\", \"webp\"",
+                    "type": "string"
+                },
+                "image_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "quality": {
+                    "type": "string"
+                },
+                "resolution": {
+                    "description": "e.g., \"800px\", \"1920px\", \"full\"",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "Supabase Storage URL",
+                    "type": "string"
+                },
+                "watermark": {
+                    "description": "true = FREE, false = COSTS 1 CREDIT",
+                    "type": "boolean"
+                }
+            }
+        },
         "instant-hdr-backend_internal_models.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -781,6 +981,55 @@ const docTemplate = `{
             "properties": {
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "instant-hdr-backend_internal_models.ImageResponse": {
+            "type": "object",
+            "properties": {
+                "downloaded": {
+                    "type": "boolean"
+                },
+                "enhance_type": {
+                    "type": "string"
+                },
+                "high_res_downloaded": {
+                    "type": "boolean"
+                },
+                "high_res_url": {
+                    "description": "Supabase URL for high-res",
+                    "type": "string"
+                },
+                "image_id": {
+                    "type": "string"
+                },
+                "image_name": {
+                    "type": "string"
+                },
+                "preview_downloaded": {
+                    "type": "boolean"
+                },
+                "preview_url": {
+                    "description": "Supabase URL for preview",
+                    "type": "string"
+                },
+                "processing_settings": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "instant-hdr-backend_internal_models.ImagesResponse": {
+            "type": "object",
+            "properties": {
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/instant-hdr-backend_internal_models.ImageResponse"
+                    }
                 }
             }
         },

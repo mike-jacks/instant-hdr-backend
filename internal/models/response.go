@@ -101,3 +101,47 @@ type FileResponse struct {
 type HealthResponse struct {
 	Status string `json:"status"`
 }
+
+type ImagesResponse struct {
+	Images []ImageResponse `json:"images"`
+}
+
+type ImageResponse struct {
+	ImageID            string                 `json:"image_id"`
+	ImageName          string                 `json:"image_name"`
+	Status             string                 `json:"status"`
+	EnhanceType        string                 `json:"enhance_type,omitempty"`
+	Downloaded         bool                   `json:"downloaded"`
+	PreviewURL         string                 `json:"preview_url,omitempty"`          // Supabase URL for preview
+	HighResURL         string                 `json:"high_res_url,omitempty"`         // Supabase URL for high-res
+	PreviewDownloaded  bool                   `json:"preview_downloaded"`
+	HighResDownloaded  bool                   `json:"high_res_downloaded"`
+	ProcessingSettings map[string]interface{} `json:"processing_settings,omitempty"`
+}
+
+type DownloadImageRequest struct {
+	// Preset quality options (recommended)
+	Quality string `json:"quality"` // "thumbnail", "preview", "medium", "high", or "custom"
+	
+	// Custom options (used when quality="custom")
+	MaxWidth *int     `json:"max_width,omitempty"` // Custom width in pixels
+	Scale    *float64 `json:"scale,omitempty"`     // Scale factor (0.5 = 50%)
+	Format   string   `json:"format,omitempty"`    // "jpeg", "png", "webp" (default: jpeg)
+	
+	// Watermark (optional, defaults to true)
+	// true = FREE download with watermark
+	// false = COSTS 1 CREDIT (unwatermarked)
+	Watermark *bool `json:"watermark,omitempty"`
+}
+
+type DownloadImageResponse struct {
+	ImageID    string `json:"image_id"`
+	Quality    string `json:"quality"`
+	URL        string `json:"url"`         // Supabase Storage URL
+	FileSize   int64  `json:"file_size"`
+	Watermark  bool   `json:"watermark"`   // true = FREE, false = COSTS 1 CREDIT
+	Resolution string `json:"resolution,omitempty"` // e.g., "800px", "1920px", "full"
+	Format     string `json:"format"`      // "jpeg", "png", "webp"
+	CreditUsed bool   `json:"credit_used"` // true if this download cost a credit
+	Message    string `json:"message"`
+}
