@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -53,21 +54,33 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 		return
 	}
 
-	// Verify authentication token
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "missing authorization token"})
-		return
-	}
+	// Log all headers for debugging
+	log.Printf("[Webhook] Received webhook request from %s", c.ClientIP())
+	log.Printf("[Webhook] Headers: %v", c.Request.Header)
 
-	// Extract token (could be "Bearer <token>" or just "<token>")
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-	token = strings.TrimSpace(token)
+	// Verify authentication token (only if webhook token is configured)
+	if h.config.AutoEnhanceWebhookToken != "" {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			log.Printf("[Webhook] Missing Authorization header (webhook token is configured)")
+			c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "missing authorization token"})
+			return
+		}
 
-	// Verify token matches configured webhook token
-	if h.config.AutoEnhanceWebhookToken != "" && token != h.config.AutoEnhanceWebhookToken {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "invalid authorization token"})
-		return
+		// Extract token (could be "Bearer <token>" or just "<token>")
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		token = strings.TrimSpace(token)
+
+		// Verify token matches configured webhook token
+		if token != h.config.AutoEnhanceWebhookToken {
+			log.Printf("[Webhook] Invalid token: received='%s' (length: %d), expected='%s' (length: %d)",
+				token, len(token), h.config.AutoEnhanceWebhookToken, len(h.config.AutoEnhanceWebhookToken))
+			c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "invalid authorization token"})
+			return
+		}
+		log.Printf("[Webhook] Token validated successfully")
+	} else {
+		log.Printf("[Webhook] Warning: AUTOENHANCE_WEBHOOK_TOKEN not configured, skipping authentication")
 	}
 
 	// Read request body
