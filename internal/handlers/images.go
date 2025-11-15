@@ -204,6 +204,13 @@ func (h *ImagesHandler) DownloadImage(c *gin.Context) {
 		return
 	}
 
+	// Get user's JWT token for RLS
+	userToken, _ := c.Get(middleware.UserTokenKey)
+	userTokenStr := ""
+	if userToken != nil {
+		userTokenStr = userToken.(string)
+	}
+
 	orderIDStr := c.Param("order_id")
 	orderID, err := uuid.Parse(orderIDStr)
 	if err != nil {
@@ -349,8 +356,8 @@ func (h *ImagesHandler) DownloadImage(c *gin.Context) {
 	// Generate filename: {image_id}_{quality}.jpg
 	filename := fmt.Sprintf("%s_%s.jpg", imageID, req.Quality)
 
-	// Upload to Supabase Storage
-	_, publicURL, err := h.storageClient.UploadFile(userID, orderID, filename, imageData)
+	// Upload to Supabase Storage with user's JWT token for RLS
+	_, publicURL, err := h.storageClient.UploadFileWithToken(userID, orderID, filename, imageData, userTokenStr)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "failed to upload to storage",

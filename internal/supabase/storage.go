@@ -14,13 +14,14 @@ type StorageClient struct {
 	baseURL string
 }
 
-func NewStorageClient(supabaseURL, publishableKey, bucket string) (*StorageClient, error) {
+func NewStorageClient(supabaseURL, serviceRoleKey, bucket string) (*StorageClient, error) {
 	// Ensure URL doesn't have trailing slash
 	baseURL := supabaseURL
 	if len(baseURL) > 0 && baseURL[len(baseURL)-1] == '/' {
 		baseURL = baseURL[:len(baseURL)-1]
 	}
-	client := storage.NewClient(baseURL+"/storage/v1", publishableKey, nil)
+	// Use service role key for server-side uploads (bypasses RLS, has full permissions)
+	client := storage.NewClient(baseURL+"/storage/v1", serviceRoleKey, nil)
 
 	return &StorageClient{
 		client:  client,
@@ -30,13 +31,27 @@ func NewStorageClient(supabaseURL, publishableKey, bucket string) (*StorageClien
 }
 
 func (s *StorageClient) UploadFile(userID, orderID uuid.UUID, filename string, data []byte) (string, string, error) {
+	return s.UploadFileWithToken(userID, orderID, filename, data, "")
+}
+
+// UploadFileWithToken uploads a file using a user's JWT token for RLS authentication
+// If userToken is empty, it will use the API key provided during client initialization (service role)
+// If userToken is provided, creates a new client with that token for RLS-protected uploads
+func (s *StorageClient) UploadFileWithToken(userID, orderID uuid.UUID, filename string, data []byte, userToken string) (string, string, error) {
 	// Create storage path: users/{user_id}/orders/{order_id}/{filename}
 	storagePath := fmt.Sprintf("users/%s/orders/%s/%s", userID.String(), orderID.String(), filename)
+
+	// Determine which client to use
+	clientToUse := s.client
+	if userToken != "" {
+		// Create a new storage client with the user's JWT token for RLS
+		clientToUse = storage.NewClient(s.baseURL+"/storage/v1", userToken, nil)
+	}
 
 	// Upload file
 	contentType := "image/jpeg"
 	upsert := true
-	_, err := s.client.UploadFile(s.bucket, storagePath, bytes.NewReader(data), storage.FileOptions{
+	_, err := clientToUse.UploadFile(s.bucket, storagePath, bytes.NewReader(data), storage.FileOptions{
 		ContentType: &contentType,
 		Upsert:      &upsert,
 	})

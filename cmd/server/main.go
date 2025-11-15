@@ -88,7 +88,16 @@ func main() {
 		log.Fatalf("Failed to initialize Supabase client: %v", err)
 	}
 
-	storageClient, err := supabase.NewStorageClient(cfg.SupabaseURL, cfg.SupabasePublishableKey, cfg.SupabaseStorageBucket)
+	// Storage client: Choose between RLS (publishable key) or service role key based on config
+	var storageKey string
+	if cfg.SupabaseUseRLS {
+		log.Println("Using Supabase Storage with RLS (publishable key) - More secure")
+		storageKey = cfg.SupabasePublishableKey
+	} else {
+		log.Println("Using Supabase Storage with Service Role Key - Bypasses RLS")
+		storageKey = cfg.SupabaseServiceRoleKey
+	}
+	storageClient, err := supabase.NewStorageClient(cfg.SupabaseURL, storageKey, cfg.SupabaseStorageBucket)
 	if err != nil {
 		log.Fatalf("Failed to initialize storage client: %v", err)
 	}

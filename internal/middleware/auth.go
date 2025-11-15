@@ -12,7 +12,10 @@ import (
 	"instant-hdr-backend/internal/config"
 )
 
-const UserIDKey = "user_id"
+const (
+	UserIDKey    = "user_id"
+	UserTokenKey = "user_token" // Raw JWT token for RLS
+)
 
 func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -195,8 +198,9 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
-		// Store user_id in context
-		c.Set(UserIDKey, sub)
-		c.Next()
+	// Store user_id and token in context
+	c.Set(UserIDKey, sub)
+	c.Set(UserTokenKey, tokenString) // Store raw token for RLS
+	c.Next()
 	}
 }

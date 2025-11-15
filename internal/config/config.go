@@ -19,6 +19,8 @@ type Config struct {
 	// Supabase
 	SupabaseURL            string
 	SupabasePublishableKey string
+	SupabaseServiceRoleKey string
+	SupabaseUseRLS         bool   // If true, use publishable key + RLS; if false, use service role key
 	SupabaseJWTSecret      string
 	SupabaseStorageBucket  string
 
@@ -48,8 +50,10 @@ func Load() (*Config, error) {
 
 		SupabaseURL:            getEnv("SUPABASE_URL", ""),
 		SupabasePublishableKey: getEnv("SUPABASE_PUBLISHABLE_KEY", ""),
+		SupabaseServiceRoleKey: getEnv("SUPABASE_SERVICE_ROLE_KEY", ""),
+		SupabaseUseRLS:         getEnv("SUPABASE_USE_RLS", "true") == "true", // Default to RLS (more secure)
 		SupabaseJWTSecret:      getEnv("SUPABASE_JWT_SECRET", ""),
-		SupabaseStorageBucket:  getEnv("SUPABASE_STORAGE_BUCKET", "processed-images"),
+		SupabaseStorageBucket:  getEnv("SUPABASE_STORAGE_BUCKET", "hdr-images"),
 
 		WebhookCallbackURL: getEnv("WEBHOOK_CALLBACK_URL", ""),
 
@@ -82,6 +86,11 @@ func (c *Config) Validate() error {
 	}
 	if c.SupabasePublishableKey == "" {
 		return fmt.Errorf("SUPABASE_PUBLISHABLE_KEY is required")
+	}
+	
+	// Service role key is only required if NOT using RLS
+	if !c.SupabaseUseRLS && c.SupabaseServiceRoleKey == "" {
+		return fmt.Errorf("SUPABASE_SERVICE_ROLE_KEY is required when SUPABASE_USE_RLS=false")
 	}
 	if c.SupabaseJWTSecret == "" {
 		return fmt.Errorf("SUPABASE_JWT_SECRET is required")
