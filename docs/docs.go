@@ -434,7 +434,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Downloads a processed image from AutoEnhance and stores it in Supabase Storage. Watermark defaults to true (FREE). Set watermark=false to download unwatermarked (COSTS 1 CREDIT). Supports quality presets (thumbnail/preview/medium/high) or custom dimensions.",
+                "description": "Downloads a processed image from AutoEnhance and stores it in Supabase Storage.\n\nQuality Options:\n- \"thumbnail\": 400px width (~50-100KB) - List view\n- \"preview\": 800px width (~150-250KB) - Gallery view (DEFAULT)\n- \"medium\": 1920px width (~500KB-1MB) - Full screen\n- \"high\": Full resolution (~2-5MB) - Client delivery\n- \"custom\": Specify max_width or scale\n\nFormat Options: \"jpeg\" (default), \"png\", \"webp\"\n\nWatermark (defaults to true = FREE):\n- true: FREE download with watermark\n- false: COSTS 1 CREDIT (unwatermarked)",
                 "consumes": [
                     "application/json"
                 ],
@@ -461,7 +461,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Download options - quality presets or custom dimensions",
+                        "description": "Download options",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -859,24 +859,29 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "format": {
-                    "description": "\"jpeg\", \"png\", \"webp\" (default: jpeg)",
-                    "type": "string"
+                    "description": "Format - Image format: \"jpeg\" (default), \"png\", or \"webp\"\nExample: \"jpeg\"",
+                    "type": "string",
+                    "example": "jpeg"
                 },
                 "max_width": {
-                    "description": "Custom options (used when quality=\"custom\")",
-                    "type": "integer"
+                    "description": "MaxWidth - Custom width in pixels (only used when quality=\"custom\")\nExample: 2400",
+                    "type": "integer",
+                    "example": 2400
                 },
                 "quality": {
-                    "description": "Preset quality options (recommended)",
-                    "type": "string"
+                    "description": "Quality preset - Options: \"thumbnail\" (400px), \"preview\" (800px), \"medium\" (1920px), \"high\" (full res), or \"custom\"\nDefault: \"preview\"\nExample: \"high\"",
+                    "type": "string",
+                    "example": "high"
                 },
                 "scale": {
-                    "description": "Scale factor (0.5 = 50%)",
-                    "type": "number"
+                    "description": "Scale - Scale factor (only used when quality=\"custom\")\nExample: 0.5 for 50% of original size",
+                    "type": "number",
+                    "example": 0.5
                 },
                 "watermark": {
-                    "description": "Watermark (optional, defaults to true)\ntrue = FREE download with watermark\nfalse = COSTS 1 CREDIT (unwatermarked)",
-                    "type": "boolean"
+                    "description": "Watermark - Whether to include watermark. Defaults to true (FREE). Set to false to use 1 credit (unwatermarked)\nExample: true",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -884,36 +889,49 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "credit_used": {
-                    "description": "true if this download cost a credit",
-                    "type": "boolean"
+                    "description": "CreditUsed indicates if this download cost a credit",
+                    "type": "boolean",
+                    "example": false
                 },
                 "file_size": {
-                    "type": "integer"
+                    "description": "FileSize in bytes",
+                    "type": "integer",
+                    "example": 2621440
                 },
                 "format": {
-                    "description": "\"jpeg\", \"png\", \"webp\"",
-                    "type": "string"
+                    "description": "Format of the downloaded image",
+                    "type": "string",
+                    "example": "jpeg"
                 },
                 "image_id": {
-                    "type": "string"
+                    "description": "ImageID from AutoEnhance",
+                    "type": "string",
+                    "example": "img_abc123"
                 },
                 "message": {
-                    "type": "string"
+                    "description": "Message with download details",
+                    "type": "string",
+                    "example": "Image downloaded successfully (FREE with watermark) - Quality: high, Resolution: full"
                 },
                 "quality": {
-                    "type": "string"
+                    "description": "Quality preset used",
+                    "type": "string",
+                    "example": "high"
                 },
                 "resolution": {
-                    "description": "e.g., \"800px\", \"1920px\", \"full\"",
-                    "type": "string"
+                    "description": "Resolution achieved (e.g., \"400px\", \"800px\", \"1920px\", \"full\")",
+                    "type": "string",
+                    "example": "full"
                 },
                 "url": {
-                    "description": "Supabase Storage URL",
-                    "type": "string"
+                    "description": "URL to access the image in Supabase Storage (publicly accessible)",
+                    "type": "string",
+                    "example": "https://project.supabase.co/storage/v1/object/public/hdr-images/users/user123/orders/order456/img_abc123_high.jpg"
                 },
                 "watermark": {
-                    "description": "true = FREE, false = COSTS 1 CREDIT",
-                    "type": "boolean"
+                    "description": "Watermark indicates if watermark was applied (true = FREE, false = COSTS 1 CREDIT)",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },

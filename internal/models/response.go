@@ -119,29 +119,56 @@ type ImageResponse struct {
 	ProcessingSettings map[string]interface{} `json:"processing_settings,omitempty"`
 }
 
+// DownloadImageRequest defines the options for downloading a processed image
 type DownloadImageRequest struct {
-	// Preset quality options (recommended)
-	Quality string `json:"quality"` // "thumbnail", "preview", "medium", "high", or "custom"
+	// Quality preset - Options: "thumbnail" (400px), "preview" (800px), "medium" (1920px), "high" (full res), or "custom"
+	// Default: "preview"
+	// Example: "high"
+	Quality string `json:"quality" example:"high"`
 	
-	// Custom options (used when quality="custom")
-	MaxWidth *int     `json:"max_width,omitempty"` // Custom width in pixels
-	Scale    *float64 `json:"scale,omitempty"`     // Scale factor (0.5 = 50%)
-	Format   string   `json:"format,omitempty"`    // "jpeg", "png", "webp" (default: jpeg)
+	// MaxWidth - Custom width in pixels (only used when quality="custom")
+	// Example: 2400
+	MaxWidth *int `json:"max_width,omitempty" example:"2400"`
 	
-	// Watermark (optional, defaults to true)
-	// true = FREE download with watermark
-	// false = COSTS 1 CREDIT (unwatermarked)
-	Watermark *bool `json:"watermark,omitempty"`
+	// Scale - Scale factor (only used when quality="custom")
+	// Example: 0.5 for 50% of original size
+	Scale *float64 `json:"scale,omitempty" example:"0.5"`
+	
+	// Format - Image format: "jpeg" (default), "png", or "webp"
+	// Example: "jpeg"
+	Format string `json:"format,omitempty" example:"jpeg"`
+	
+	// Watermark - Whether to include watermark. Defaults to true (FREE). Set to false to use 1 credit (unwatermarked)
+	// Example: true
+	Watermark *bool `json:"watermark,omitempty" example:"true"`
 }
 
+// DownloadImageResponse contains the result of downloading an image
 type DownloadImageResponse struct {
-	ImageID    string `json:"image_id"`
-	Quality    string `json:"quality"`
-	URL        string `json:"url"`         // Supabase Storage URL
-	FileSize   int64  `json:"file_size"`
-	Watermark  bool   `json:"watermark"`   // true = FREE, false = COSTS 1 CREDIT
-	Resolution string `json:"resolution,omitempty"` // e.g., "800px", "1920px", "full"
-	Format     string `json:"format"`      // "jpeg", "png", "webp"
-	CreditUsed bool   `json:"credit_used"` // true if this download cost a credit
-	Message    string `json:"message"`
+	// ImageID from AutoEnhance
+	ImageID string `json:"image_id" example:"img_abc123"`
+	
+	// Quality preset used
+	Quality string `json:"quality" example:"high"`
+	
+	// URL to access the image in Supabase Storage (publicly accessible)
+	URL string `json:"url" example:"https://project.supabase.co/storage/v1/object/public/hdr-images/users/user123/orders/order456/img_abc123_high.jpg"`
+	
+	// FileSize in bytes
+	FileSize int64 `json:"file_size" example:"2621440"`
+	
+	// Watermark indicates if watermark was applied (true = FREE, false = COSTS 1 CREDIT)
+	Watermark bool `json:"watermark" example:"true"`
+	
+	// Resolution achieved (e.g., "400px", "800px", "1920px", "full")
+	Resolution string `json:"resolution,omitempty" example:"full"`
+	
+	// Format of the downloaded image
+	Format string `json:"format" example:"jpeg"`
+	
+	// CreditUsed indicates if this download cost a credit
+	CreditUsed bool `json:"credit_used" example:"false"`
+	
+	// Message with download details
+	Message string `json:"message" example:"Image downloaded successfully (FREE with watermark) - Quality: high, Resolution: full"`
 }

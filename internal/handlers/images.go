@@ -159,14 +159,27 @@ func (h *ImagesHandler) ListImages(c *gin.Context) {
 
 // DownloadImage godoc
 // @Summary     Download processed image to Supabase Storage
-// @Description Downloads a processed image from AutoEnhance and stores it in Supabase Storage. Watermark defaults to true (FREE). Set watermark=false to download unwatermarked (COSTS 1 CREDIT). Supports quality presets (thumbnail/preview/medium/high) or custom dimensions.
+// @Description Downloads a processed image from AutoEnhance and stores it in Supabase Storage.
+// @Description
+// @Description Quality Options:
+// @Description - "thumbnail": 400px width (~50-100KB) - List view
+// @Description - "preview": 800px width (~150-250KB) - Gallery view (DEFAULT)
+// @Description - "medium": 1920px width (~500KB-1MB) - Full screen
+// @Description - "high": Full resolution (~2-5MB) - Client delivery
+// @Description - "custom": Specify max_width or scale
+// @Description
+// @Description Format Options: "jpeg" (default), "png", "webp"
+// @Description
+// @Description Watermark (defaults to true = FREE):
+// @Description - true: FREE download with watermark
+// @Description - false: COSTS 1 CREDIT (unwatermarked)
 // @Tags        images
 // @Accept      json
 // @Produce     json
 // @Security    Bearer
 // @Param       order_id path string true "Order ID (UUID)"
 // @Param       image_id path string true "Image ID from AutoEnhance"
-// @Param       request body models.DownloadImageRequest true "Download options - quality presets or custom dimensions"
+// @Param       request body models.DownloadImageRequest true "Download options"
 // @Success     200 {object} models.DownloadImageResponse
 // @Failure     400 {object} models.ErrorResponse
 // @Failure     401 {object} models.ErrorResponse
