@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -79,12 +80,26 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 		return
 	}
 
+	// Check if body is empty
+	if len(body) == 0 {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "empty request body",
+			Message: "webhook request body is empty. Expected JSON payload from AutoEnhance AI.",
+		})
+		return
+	}
+
 	// Parse JSON event
 	var event AutoEnhanceWebhookEvent
 	if err := json.Unmarshal(body, &event); err != nil {
+		// Log the raw body for debugging
+		bodyStr := string(body)
+		if len(bodyStr) > 500 {
+			bodyStr = bodyStr[:500] + "... (truncated)"
+		}
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error:   "failed to parse event",
-			Message: err.Error(),
+			Message: fmt.Sprintf("invalid JSON: %v. Received body: %s", err, bodyStr),
 		})
 		return
 	}
