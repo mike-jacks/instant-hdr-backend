@@ -1007,27 +1007,25 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "format": {
-                    "description": "Format - Image format: \"jpeg\" (default), \"png\", or \"webp\"\nExample: \"jpeg\"",
+                    "description": "Format - Image format: \"jpeg\" (default), \"png\", or \"webp\"\nDefault: \"jpeg\"",
                     "type": "string",
                     "example": "jpeg"
                 },
                 "max_width": {
-                    "description": "MaxWidth - Custom width in pixels (only used when quality=\"custom\")\nExample: 2400",
-                    "type": "integer",
-                    "example": 2400
+                    "description": "MaxWidth - Custom width in pixels (only used when quality=\"custom\")\nDefault: null (not used unless quality=\"custom\")",
+                    "type": "integer"
                 },
                 "quality": {
-                    "description": "Quality preset - Options: \"thumbnail\" (400px), \"preview\" (800px), \"medium\" (1920px), \"high\" (full res), or \"custom\"\nDefault: \"preview\"\nExample: \"high\"",
+                    "description": "Quality preset - Options: \"thumbnail\" (400px), \"preview\" (800px), \"medium\" (1920px), \"high\" (full res), or \"custom\"\nDefault: \"preview\"",
                     "type": "string",
-                    "example": "high"
+                    "example": "preview"
                 },
                 "scale": {
-                    "description": "Scale - Scale factor (only used when quality=\"custom\")\nExample: 0.5 for 50% of original size",
-                    "type": "number",
-                    "example": 0.5
+                    "description": "Scale - Scale factor (only used when quality=\"custom\")\nDefault: null (not used unless quality=\"custom\")\nExample: 0.5 for 50% of original size",
+                    "type": "number"
                 },
                 "watermark": {
-                    "description": "Watermark - Whether to include watermark. Defaults to true (FREE). Set to false to use 1 credit (unwatermarked)\nExample: true",
+                    "description": "Watermark - Whether to include watermark. Defaults to true (FREE). Set to false to use 1 credit (unwatermarked)\nDefault: true (FREE - no credits used)",
                     "type": "boolean",
                     "example": true
                 }
@@ -1044,7 +1042,7 @@ const docTemplate = `{
                 "file_size": {
                     "description": "FileSize in bytes",
                     "type": "integer",
-                    "example": 2621440
+                    "example": 524288
                 },
                 "format": {
                     "description": "Format of the downloaded image",
@@ -1059,22 +1057,22 @@ const docTemplate = `{
                 "message": {
                     "description": "Message with download details",
                     "type": "string",
-                    "example": "Image downloaded successfully (FREE with watermark) - Quality: high, Resolution: full"
+                    "example": "Image downloaded successfully (FREE with watermark) - Quality: preview, Resolution: 800px"
                 },
                 "quality": {
                     "description": "Quality preset used",
                     "type": "string",
-                    "example": "high"
+                    "example": "preview"
                 },
                 "resolution": {
                     "description": "Resolution achieved (e.g., \"400px\", \"800px\", \"1920px\", \"full\")",
                     "type": "string",
-                    "example": "full"
+                    "example": "800px"
                 },
                 "url": {
                     "description": "URL to access the image in Supabase Storage (publicly accessible)",
                     "type": "string",
-                    "example": "https://project.supabase.co/storage/v1/object/public/hdr-images/users/user123/orders/order456/img_abc123_high.jpg"
+                    "example": "https://project.supabase.co/storage/v1/object/public/hdr-images/users/user123/orders/order456/img_abc123_preview.jpg"
                 },
                 "watermark": {
                     "description": "Watermark indicates if watermark was applied (true = FREE, false = COSTS 1 CREDIT)",
@@ -1285,8 +1283,7 @@ const docTemplate = `{
             "properties": {
                 "ai_version": {
                     "description": "AIVersion specifies the AI model version to use for processing.\nExamples: \"4.0\", \"5.2\", \"5.x\"\nVersions ending in .x (e.g., \"5.x\") will automatically use the latest minor version.\nDefault: Latest stable version (automatically selected by AutoEnhance)",
-                    "type": "string",
-                    "example": "5.x"
+                    "type": "string"
                 },
                 "bracket_grouping": {
                     "description": "BracketGrouping specifies how uploaded brackets are organized into HDR images.\nOptions: \"by_upload_group\", \"auto\", \"all\", \"individual\", or custom array\n- \"by_upload_group\" (RECOMMENDED): Groups brackets by group_id assigned during upload\n- \"auto\": Groups brackets sequentially by sets (e.g., every 3 brackets = 1 HDR)\n- \"all\": Merges ALL brackets into ONE HDR image (maximum dynamic range)\n- \"individual\": Each bracket becomes a separate image (no HDR merging)\n- Custom array: [[id1,id2,id3],[id4,id5]] - Specify exact bracket groupings by bracket_id\nDefault: \"by_upload_group\"",
@@ -1294,9 +1291,8 @@ const docTemplate = `{
                     "example": "by_upload_group"
                 },
                 "brackets_per_image": {
-                    "description": "BracketsPerImage specifies how many consecutive brackets to group into one HDR image.\nOnly used when bracket_grouping is \"auto\". This tells the system to group brackets sequentially.\n\nExample with 6 brackets and brackets_per_image=3:\n  - Brackets [1,2,3] → HDR Image #1\n  - Brackets [4,5,6] → HDR Image #2\n\nCommon values:\n- 3 (DEFAULT): Standard 3-exposure HDR (underexposed, normal, overexposed)\n  Best for: Most real estate shots, typical bracketing workflows\n- 5: 5-exposure HDR for more dynamic range\n  Best for: High-contrast scenes, sunset/sunrise shots\n- 7: 7-exposure HDR for maximum detail in shadows and highlights\n  Best for: Extreme lighting (bright windows + dark interiors)\n\nNote: More brackets = better HDR but longer processing time\nDefault: 3",
-                    "type": "integer",
-                    "example": 3
+                    "description": "BracketsPerImage specifies how many consecutive brackets to group into one HDR image.\nOnly used when bracket_grouping is \"auto\". This tells the system to group brackets sequentially.\nIGNORED if bracket_grouping is \"by_upload_group\" (the default).\n\nExample with 6 brackets and brackets_per_image=3:\n  - Brackets [1,2,3] → HDR Image #1\n  - Brackets [4,5,6] → HDR Image #2\n\nCommon values:\n- 3 (DEFAULT when using \"auto\"): Standard 3-exposure HDR (underexposed, normal, overexposed)\n  Best for: Most real estate shots, typical bracketing workflows\n- 5: 5-exposure HDR for more dynamic range\n  Best for: High-contrast scenes, sunset/sunrise shots\n- 7: 7-exposure HDR for maximum detail in shadows and highlights\n  Best for: Extreme lighting (bright windows + dark interiors)\n\nNote: More brackets = better HDR but longer processing time\nDefault: 3 (only applies when bracket_grouping=\"auto\")",
+                    "type": "integer"
                 },
                 "cloud_type": {
                     "description": "CloudType specifies what type of clouds to add when sky replacement is enabled.\nOptions: \"CLEAR\", \"LOW_CLOUD\", \"HIGH_CLOUD\"\n- \"CLEAR\": Clear blue sky with minimal clouds\n- \"LOW_CLOUD\": Low-altitude clouds for subtle effect\n- \"HIGH_CLOUD\": High-altitude clouds for more dramatic skies\nDefault: null (AutoEnhance chooses automatically based on scene)",
@@ -1305,8 +1301,7 @@ const docTemplate = `{
                         "CLEAR",
                         "LOW_CLOUD",
                         "HIGH_CLOUD"
-                    ],
-                    "example": "CLEAR"
+                    ]
                 },
                 "enhance_type": {
                     "description": "EnhanceType specifies the type of enhancement to apply to the image.\nOptions: \"property\", \"property_usa\", \"warm\", \"neutral\", \"modern\"\n- \"property\" (DEFAULT): Best for real estate photography - balanced enhancement\n- \"property_usa\": USA-specific real estate enhancement (for AI version \u003c 4.0)\n- \"warm\": Warm color grading for cozy, inviting feel (AI version \u003e= 4.0)\n- \"neutral\": Neutral color grading for natural look (AI version \u003e= 4.0)\n- \"modern\": Modern, contemporary enhancement style (AI version \u003e= 4.0)\nDefault: \"property\"",

@@ -29,7 +29,7 @@ type ProcessRequest struct {
 	// - "LOW_CLOUD": Low-altitude clouds for subtle effect
 	// - "HIGH_CLOUD": High-altitude clouds for more dramatic skies
 	// Default: null (AutoEnhance chooses automatically based on scene)
-	CloudType string `json:"cloud_type,omitempty" example:"CLEAR" enums:"CLEAR,LOW_CLOUD,HIGH_CLOUD"`
+	CloudType string `json:"cloud_type,omitempty" enums:"CLEAR,LOW_CLOUD,HIGH_CLOUD"`
 
 	// WindowPullType controls how window views are enhanced.
 	// Options: "NONE", "ONLY_WINDOWS", "WINDOWS_WITH_SKIES"
@@ -66,7 +66,7 @@ type ProcessRequest struct {
 	// Examples: "4.0", "5.2", "5.x"
 	// Versions ending in .x (e.g., "5.x") will automatically use the latest minor version.
 	// Default: Latest stable version (automatically selected by AutoEnhance)
-	AIVersion string `json:"ai_version,omitempty" example:"5.x"`
+	AIVersion string `json:"ai_version,omitempty"`
 
 	// BracketGrouping specifies how uploaded brackets are organized into HDR images.
 	// Options: "by_upload_group", "auto", "all", "individual", or custom array
@@ -80,13 +80,14 @@ type ProcessRequest struct {
 
 	// BracketsPerImage specifies how many consecutive brackets to group into one HDR image.
 	// Only used when bracket_grouping is "auto". This tells the system to group brackets sequentially.
+	// IGNORED if bracket_grouping is "by_upload_group" (the default).
 	//
 	// Example with 6 brackets and brackets_per_image=3:
 	//   - Brackets [1,2,3] → HDR Image #1
 	//   - Brackets [4,5,6] → HDR Image #2
 	//
 	// Common values:
-	// - 3 (DEFAULT): Standard 3-exposure HDR (underexposed, normal, overexposed)
+	// - 3 (DEFAULT when using "auto"): Standard 3-exposure HDR (underexposed, normal, overexposed)
 	//   Best for: Most real estate shots, typical bracketing workflows
 	// - 5: 5-exposure HDR for more dynamic range
 	//   Best for: High-contrast scenes, sunset/sunrise shots
@@ -94,8 +95,8 @@ type ProcessRequest struct {
 	//   Best for: Extreme lighting (bright windows + dark interiors)
 	//
 	// Note: More brackets = better HDR but longer processing time
-	// Default: 3
-	BracketsPerImage int `json:"brackets_per_image,omitempty" example:"3"`
+	// Default: 3 (only applies when bracket_grouping="auto")
+	BracketsPerImage int `json:"brackets_per_image,omitempty"`
 
 	// Optional metadata to store with the processing request for your own tracking
 	Metadata map[string]interface{} `json:"metadata,omitempty"`

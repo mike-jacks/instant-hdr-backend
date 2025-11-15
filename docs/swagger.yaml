@@ -39,32 +39,30 @@ definitions:
       format:
         description: |-
           Format - Image format: "jpeg" (default), "png", or "webp"
-          Example: "jpeg"
+          Default: "jpeg"
         example: jpeg
         type: string
       max_width:
         description: |-
           MaxWidth - Custom width in pixels (only used when quality="custom")
-          Example: 2400
-        example: 2400
+          Default: null (not used unless quality="custom")
         type: integer
       quality:
         description: |-
           Quality preset - Options: "thumbnail" (400px), "preview" (800px), "medium" (1920px), "high" (full res), or "custom"
           Default: "preview"
-          Example: "high"
-        example: high
+        example: preview
         type: string
       scale:
         description: |-
           Scale - Scale factor (only used when quality="custom")
+          Default: null (not used unless quality="custom")
           Example: 0.5 for 50% of original size
-        example: 0.5
         type: number
       watermark:
         description: |-
           Watermark - Whether to include watermark. Defaults to true (FREE). Set to false to use 1 credit (unwatermarked)
-          Example: true
+          Default: true (FREE - no credits used)
         example: true
         type: boolean
     type: object
@@ -76,7 +74,7 @@ definitions:
         type: boolean
       file_size:
         description: FileSize in bytes
-        example: 2621440
+        example: 524288
         type: integer
       format:
         description: Format of the downloaded image
@@ -88,20 +86,20 @@ definitions:
         type: string
       message:
         description: Message with download details
-        example: 'Image downloaded successfully (FREE with watermark) - Quality: high,
-          Resolution: full'
+        example: 'Image downloaded successfully (FREE with watermark) - Quality: preview,
+          Resolution: 800px'
         type: string
       quality:
         description: Quality preset used
-        example: high
+        example: preview
         type: string
       resolution:
         description: Resolution achieved (e.g., "400px", "800px", "1920px", "full")
-        example: full
+        example: 800px
         type: string
       url:
         description: URL to access the image in Supabase Storage (publicly accessible)
-        example: https://project.supabase.co/storage/v1/object/public/hdr-images/users/user123/orders/order456/img_abc123_high.jpg
+        example: https://project.supabase.co/storage/v1/object/public/hdr-images/users/user123/orders/order456/img_abc123_preview.jpg
         type: string
       watermark:
         description: Watermark indicates if watermark was applied (true = FREE, false
@@ -247,7 +245,6 @@ definitions:
           Examples: "4.0", "5.2", "5.x"
           Versions ending in .x (e.g., "5.x") will automatically use the latest minor version.
           Default: Latest stable version (automatically selected by AutoEnhance)
-        example: 5.x
         type: string
       bracket_grouping:
         description: |-
@@ -265,13 +262,14 @@ definitions:
         description: |-
           BracketsPerImage specifies how many consecutive brackets to group into one HDR image.
           Only used when bracket_grouping is "auto". This tells the system to group brackets sequentially.
+          IGNORED if bracket_grouping is "by_upload_group" (the default).
 
           Example with 6 brackets and brackets_per_image=3:
             - Brackets [1,2,3] → HDR Image #1
             - Brackets [4,5,6] → HDR Image #2
 
           Common values:
-          - 3 (DEFAULT): Standard 3-exposure HDR (underexposed, normal, overexposed)
+          - 3 (DEFAULT when using "auto"): Standard 3-exposure HDR (underexposed, normal, overexposed)
             Best for: Most real estate shots, typical bracketing workflows
           - 5: 5-exposure HDR for more dynamic range
             Best for: High-contrast scenes, sunset/sunrise shots
@@ -279,8 +277,7 @@ definitions:
             Best for: Extreme lighting (bright windows + dark interiors)
 
           Note: More brackets = better HDR but longer processing time
-          Default: 3
-        example: 3
+          Default: 3 (only applies when bracket_grouping="auto")
         type: integer
       cloud_type:
         description: |-
@@ -294,7 +291,6 @@ definitions:
         - CLEAR
         - LOW_CLOUD
         - HIGH_CLOUD
-        example: CLEAR
         type: string
       enhance_type:
         description: |-

@@ -123,23 +123,23 @@ type ImageResponse struct {
 type DownloadImageRequest struct {
 	// Quality preset - Options: "thumbnail" (400px), "preview" (800px), "medium" (1920px), "high" (full res), or "custom"
 	// Default: "preview"
-	// Example: "high"
-	Quality string `json:"quality" example:"high"`
+	Quality string `json:"quality" example:"preview"`
 	
 	// MaxWidth - Custom width in pixels (only used when quality="custom")
-	// Example: 2400
-	MaxWidth *int `json:"max_width,omitempty" example:"2400"`
+	// Default: null (not used unless quality="custom")
+	MaxWidth *int `json:"max_width,omitempty"`
 	
 	// Scale - Scale factor (only used when quality="custom")
+	// Default: null (not used unless quality="custom")
 	// Example: 0.5 for 50% of original size
-	Scale *float64 `json:"scale,omitempty" example:"0.5"`
+	Scale *float64 `json:"scale,omitempty"`
 	
 	// Format - Image format: "jpeg" (default), "png", or "webp"
-	// Example: "jpeg"
+	// Default: "jpeg"
 	Format string `json:"format,omitempty" example:"jpeg"`
 	
 	// Watermark - Whether to include watermark. Defaults to true (FREE). Set to false to use 1 credit (unwatermarked)
-	// Example: true
+	// Default: true (FREE - no credits used)
 	Watermark *bool `json:"watermark,omitempty" example:"true"`
 }
 
@@ -149,19 +149,19 @@ type DownloadImageResponse struct {
 	ImageID string `json:"image_id" example:"img_abc123"`
 	
 	// Quality preset used
-	Quality string `json:"quality" example:"high"`
+	Quality string `json:"quality" example:"preview"`
 	
 	// URL to access the image in Supabase Storage (publicly accessible)
-	URL string `json:"url" example:"https://project.supabase.co/storage/v1/object/public/hdr-images/users/user123/orders/order456/img_abc123_high.jpg"`
+	URL string `json:"url" example:"https://project.supabase.co/storage/v1/object/public/hdr-images/users/user123/orders/order456/img_abc123_preview.jpg"`
 	
 	// FileSize in bytes
-	FileSize int64 `json:"file_size" example:"2621440"`
+	FileSize int64 `json:"file_size" example:"524288"`
 	
 	// Watermark indicates if watermark was applied (true = FREE, false = COSTS 1 CREDIT)
 	Watermark bool `json:"watermark" example:"true"`
 	
 	// Resolution achieved (e.g., "400px", "800px", "1920px", "full")
-	Resolution string `json:"resolution,omitempty" example:"full"`
+	Resolution string `json:"resolution,omitempty" example:"800px"`
 	
 	// Format of the downloaded image
 	Format string `json:"format" example:"jpeg"`
@@ -170,5 +170,5 @@ type DownloadImageResponse struct {
 	CreditUsed bool `json:"credit_used" example:"false"`
 	
 	// Message with download details
-	Message string `json:"message" example:"Image downloaded successfully (FREE with watermark) - Quality: high, Resolution: full"`
+	Message string `json:"message" example:"Image downloaded successfully (FREE with watermark) - Quality: preview, Resolution: 800px"`
 }
