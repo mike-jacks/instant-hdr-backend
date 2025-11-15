@@ -80,11 +80,13 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 		return
 	}
 
-	// Check if body is empty
+	// Handle empty body (could be a test/verification request from AutoEnhance)
 	if len(body) == 0 {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error:   "empty request body",
-			Message: "webhook request body is empty. Expected JSON payload from AutoEnhance AI.",
+		// AutoEnhance may send empty body for webhook verification/test
+		// Return success to acknowledge the webhook is configured
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"message": "webhook endpoint is active and ready to receive events",
 		})
 		return
 	}
