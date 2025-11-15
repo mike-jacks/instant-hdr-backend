@@ -20,7 +20,7 @@ type Config struct {
 	SupabaseURL            string
 	SupabasePublishableKey string
 	SupabaseServiceRoleKey string
-	SupabaseUseRLS         bool   // If true, use publishable key + RLS; if false, use service role key
+	SupabaseUseRLS         bool // If true, use publishable key + RLS; if false, use service role key
 	SupabaseJWTSecret      string
 	SupabaseStorageBucket  string
 
@@ -87,10 +87,10 @@ func (c *Config) Validate() error {
 	if c.SupabasePublishableKey == "" {
 		return fmt.Errorf("SUPABASE_PUBLISHABLE_KEY is required")
 	}
-	
-	// Service role key is only required if NOT using RLS
-	if !c.SupabaseUseRLS && c.SupabaseServiceRoleKey == "" {
-		return fmt.Errorf("SUPABASE_SERVICE_ROLE_KEY is required when SUPABASE_USE_RLS=false")
+
+	// Service role key is required for Realtime broadcast and optionally for Storage
+	if c.SupabaseServiceRoleKey == "" {
+		return fmt.Errorf("SUPABASE_SERVICE_ROLE_KEY is required for Realtime broadcast")
 	}
 	if c.SupabaseJWTSecret == "" {
 		return fmt.Errorf("SUPABASE_JWT_SECRET is required")

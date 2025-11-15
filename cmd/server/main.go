@@ -102,7 +102,12 @@ func main() {
 		log.Fatalf("Failed to initialize storage client: %v", err)
 	}
 
-	realtimeClient := supabase.NewRealtimeClient(supabaseClient.Supabase, cfg.SupabaseURL, cfg.SupabasePublishableKey)
+	// Use service role key for Realtime (server-side publishing)
+	// Service role key bypasses RLS and is required for server-side broadcast
+	if cfg.SupabaseServiceRoleKey == "" {
+		log.Fatalf("SUPABASE_SERVICE_ROLE_KEY is required for Realtime broadcast")
+	}
+	realtimeClient := supabase.NewRealtimeClient(supabaseClient.Supabase, cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
 
 	// Create database client for direct queries
 	var dbClient *supabase.DatabaseClient
@@ -185,8 +190,8 @@ func main() {
 
 	// Status and files
 	api.GET("/orders/:order_id/status", statusHandler.GetStatus)
-	api.GET("/orders/:order_id/files", filesHandler.GetFiles) // Processed files only
-	api.GET("/orders/:order_id/brackets", filesHandler.GetBrackets)       // Uploaded brackets (raw images)
+	api.GET("/orders/:order_id/files", filesHandler.GetFiles)                        // Processed files only
+	api.GET("/orders/:order_id/brackets", filesHandler.GetBrackets)                  // Uploaded brackets (raw images)
 	api.DELETE("/orders/:order_id/brackets/:bracket_id", filesHandler.DeleteBracket) // Delete bracket
 
 	// Images - list, download, and delete processed images

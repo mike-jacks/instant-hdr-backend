@@ -12,17 +12,17 @@ import (
 )
 
 type RealtimeClient struct {
-	client          *supabase.Client
-	supabaseURL     string
-	publishableKey  string
-	httpClient      *http.Client
+	client         *supabase.Client
+	supabaseURL    string
+	serviceRoleKey string
+	httpClient     *http.Client
 }
 
-func NewRealtimeClient(client *supabase.Client, supabaseURL, publishableKey string) *RealtimeClient {
+func NewRealtimeClient(client *supabase.Client, supabaseURL, serviceRoleKey string) *RealtimeClient {
 	return &RealtimeClient{
 		client:         client,
-		supabaseURL:     supabaseURL,
-		publishableKey: publishableKey,
+		supabaseURL:    supabaseURL,
+		serviceRoleKey: serviceRoleKey,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
@@ -31,12 +31,17 @@ func NewRealtimeClient(client *supabase.Client, supabaseURL, publishableKey stri
 
 // PublishEvent publishes a custom event to a Supabase Realtime channel using the REST API
 // This allows frontend to receive events via broadcast listeners
-// Uses publishable key for authentication (can also use service role key)
+// Uses service role key for authentication (bypasses RLS)
 // Based on: https://supabase.com/docs/guides/realtime/broadcast
 func (r *RealtimeClient) PublishEvent(channel string, event string, payload map[string]interface{}) error {
-	if r.publishableKey == "" {
-		// If no publishable key, skip publishing (graceful degradation)
+	// Use service role key for server-side publishing
+	if r.serviceRoleKey == "" {
+		// If no service role key available, skip publishing (graceful degradation)
 		return nil
+	}
+
+	if r.supabaseURL == "" {
+		return fmt.Errorf("supabase URL is not configured")
 	}
 
 	// Add timestamp to payload
@@ -47,6 +52,7 @@ func (r *RealtimeClient) PublishEvent(channel string, event string, payload map[
 
 	// Prepare request body according to Supabase API format
 	// Format: { "messages": [{ "topic": "...", "event": "...", "payload": {...} }] }
+	// Docs: https://supabase.com/docs/guides/realtime/broadcast
 	requestBody := map[string]interface{}{
 		"messages": []map[string]interface{}{
 			{
@@ -65,28 +71,41 @@ func (r *RealtimeClient) PublishEvent(channel string, event string, payload map[
 	// Call Supabase Realtime REST API
 	// Endpoint: POST /realtime/v1/api/broadcast
 	// Docs: https://supabase.com/docs/guides/realtime/broadcast
+	// According to docs, only 'apikey' header is needed (publishable/anon key)
+	// Example from docs:
+	//   curl -v \
+	//   -H 'apikey: <SUPABASE_TOKEN>' \
+	//   -H 'Content-Type: application/json' \
+	//   --data-raw '{ "messages": [{ "topic": "test", "event": "event", "payload": { "test": "test" } }] }' \
+	//   'https://<PROJECT_REF>.supabase.co/realtime/v1/api/broadcast'
 	url := fmt.Sprintf("%s/realtime/v1/api/broadcast", r.supabaseURL)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// Set required headers as per Supabase docs
+	// Use service role key for server-side publishing (bypasses RLS)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", r.publishableKey)
-	// Note: Authorization header is optional, apikey header is sufficient
-	// But including both for compatibility
+	req.Header.Set("apikey", r.serviceRoleKey)
 
 	resp, err := r.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
+		return fmt.Errorf("failed to send request to %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
+	// Read response body for debugging
+	bodyBytes := make([]byte, 2048)
+	n, _ := resp.Body.Read(bodyBytes)
+	responseBody := string(bodyBytes[:n])
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		// Read response body for error details
-		bodyBytes := make([]byte, 1024)
-		n, _ := resp.Body.Read(bodyBytes)
-		return fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(bodyBytes[:n]))
+		return fmt.Errorf("realtime broadcast failed: status %d, channel: %s, event: %s, body: %s. "+
+			"Verify: 1) SUPABASE_URL is correct (should be https://<project-ref>.supabase.co), "+
+			"2) SUPABASE_SERVICE_ROLE_KEY is correct (should start with 'eyJ...' or 'sb_...'), "+
+			"3) Service role key has proper permissions",
+			resp.StatusCode, channel, event, responseBody)
 	}
 
 	return nil
@@ -110,16 +129,16 @@ func (r *RealtimeClient) PublishUserEvent(userID uuid.UUID, event string, payloa
 // Event payloads
 func UploadStartedPayload(orderID uuid.UUID, fileCount int) map[string]interface{} {
 	return map[string]interface{}{
-		"order_id":  orderID.String(),
-		"status":    "uploading",
+		"order_id":   orderID.String(),
+		"status":     "uploading",
 		"file_count": fileCount,
 	}
 }
 
 func UploadCompletedPayload(orderID uuid.UUID, fileCount int) map[string]interface{} {
 	return map[string]interface{}{
-		"order_id":  orderID.String(),
-		"status":    "uploaded",
+		"order_id":   orderID.String(),
+		"status":     "uploaded",
 		"file_count": fileCount,
 	}
 }
@@ -141,9 +160,9 @@ func ProcessingProgressPayload(orderID uuid.UUID, progress int) map[string]inter
 
 func ProcessingCompletedPayload(orderID uuid.UUID, fileCount int) map[string]interface{} {
 	return map[string]interface{}{
-		"order_id":  orderID.String(),
-		"status":    "completed",
-		"progress":  100,
+		"order_id":   orderID.String(),
+		"status":     "completed",
+		"progress":   100,
 		"file_count": fileCount,
 	}
 }
