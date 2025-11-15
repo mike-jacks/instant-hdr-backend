@@ -186,11 +186,13 @@ func main() {
 	// Status and files
 	api.GET("/orders/:order_id/status", statusHandler.GetStatus)
 	api.GET("/orders/:order_id/files", filesHandler.GetFiles) // Processed files only
-	api.GET("/orders/:order_id/brackets", filesHandler.GetBrackets) // Uploaded brackets
+	api.GET("/orders/:order_id/brackets", filesHandler.GetBrackets)       // Uploaded brackets (raw images)
+	api.DELETE("/orders/:order_id/brackets/:bracket_id", filesHandler.DeleteBracket) // Delete bracket
 
-	// Images - list and download processed images
+	// Images - list, download, and delete processed images
 	api.GET("/orders/:order_id/images", imagesHandler.ListImages)
 	api.POST("/orders/:order_id/images/:image_id/download", imagesHandler.DownloadImage)
+	api.DELETE("/orders/:order_id/images/:image_id", imagesHandler.DeleteImage)
 
 	// Webhook (no auth, uses token authentication)
 	router.POST("/api/v1/webhooks/autoenhance", webhookHandler.HandleWebhook)

@@ -39,7 +39,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.HealthResponse"
+                            "$ref": "#/definitions/models.HealthResponse"
                         }
                     }
                 }
@@ -67,19 +67,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.OrderListResponse"
+                            "$ref": "#/definitions/models.OrderListResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -107,7 +107,7 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.CreateOrderRequest"
+                            "$ref": "#/definitions/models.CreateOrderRequest"
                         }
                     }
                 ],
@@ -115,25 +115,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.OrderResponse"
+                            "$ref": "#/definitions/models.OrderResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -170,25 +170,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.OrderResponse"
+                            "$ref": "#/definitions/models.OrderResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -232,25 +232,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -287,25 +287,96 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.BracketsResponse"
+                            "$ref": "#/definitions/models.BracketsResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{order_id}/brackets/{bracket_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Deletes a bracket (uploaded raw image) from AutoEnhance AI. Note: Brackets are automatically cleaned up after successful processing.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "brackets"
+                ],
+                "summary": "Delete an uploaded bracket",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bracket ID from AutoEnhance",
+                        "name": "bracket_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -342,25 +413,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.FilesResponse"
+                            "$ref": "#/definitions/models.FilesResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -397,31 +468,102 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ImagesResponse"
+                            "$ref": "#/definitions/models.ImagesResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{order_id}/images/{image_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Deletes a processed image from AutoEnhance AI and all associated files from Supabase Storage and database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "images"
+                ],
+                "summary": "Delete a processed image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Image ID from AutoEnhance",
+                        "name": "image_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -466,7 +608,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.DownloadImageRequest"
+                            "$ref": "#/definitions/models.DownloadImageRequest"
                         }
                     }
                 ],
@@ -474,31 +616,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.DownloadImageResponse"
+                            "$ref": "#/definitions/models.DownloadImageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -511,7 +653,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Initiates HDR processing and merging of uploaded images using AutoEnhance AI. Groups brackets into images and processes them with the specified enhancement options.",
+                "description": "Initiates HDR processing and merging of uploaded images using AutoEnhance AI.\n\n**Processing Options:**\n\n**enhance_type** (default: \"property\"):\n- \"property\": Best for real estate - balanced enhancement\n- \"warm\": Warm color grading for cozy feel (AI \u003e= 4.0)\n- \"neutral\": Neutral natural look (AI \u003e= 4.0)\n- \"modern\": Contemporary enhancement (AI \u003e= 4.0)\n\n**sky_replacement** (default: true):\n- Replaces dull skies with attractive blue skies\n\n**cloud_type** (optional):\n- \"CLEAR\": Clear blue sky, \"LOW_CLOUD\": Subtle clouds, \"HIGH_CLOUD\": Dramatic clouds\n\n**window_pull_type** (default: \"WINDOWS_WITH_SKIES\"):\n- \"NONE\": No window enhancement\n- \"ONLY_WINDOWS\": Enhance window views only\n- \"WINDOWS_WITH_SKIES\": Enhance windows + replace exterior skies (AI \u003e= 5.2) - BEST RESULTS\n\n**vertical_correction** (default: true):\n- Straightens tilted walls and vertical lines\n\n**lens_correction** (default: true):\n- Removes wide-angle lens distortion\n\n**upscale** (default: false):\n- AI upscaling to double resolution (increases processing time)\n\n**privacy** (default: false):\n- Blurs faces and license plates\n\n**bracket_grouping** (default: \"by_upload_group\"):\n- \"by_upload_group\": Use groups from upload\n- \"auto\": Sequential sets (every N brackets = 1 HDR, where N = brackets_per_image)\n- \"all\": One mega-HDR from all brackets\n- \"individual\": Separate images (no HDR)\n\n**brackets_per_image** (default: 3, only for \"auto\" mode):\n- How many consecutive brackets to merge into one HDR image\n- Example: 6 brackets + brackets_per_image=3 → 2 HDR images ([1,2,3] and [4,5,6])\n- 3 = Standard HDR, 5 = High dynamic range, 7 = Extreme lighting",
                 "consumes": [
                     "application/json"
                 ],
@@ -531,11 +673,11 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Processing options. enhance_type defaults to 'property' for real estate photography.",
+                        "description": "Processing options with defaults shown in model",
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ProcessRequest"
+                            "$ref": "#/definitions/models.ProcessRequest"
                         }
                     }
                 ],
@@ -543,31 +685,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ProcessResponse"
+                            "$ref": "#/definitions/models.ProcessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -604,25 +746,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.StatusResponse"
+                            "$ref": "#/definitions/models.StatusResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -635,7 +777,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Uploads multiple bracketed images to an AutoEnhance AI order. All images in a single upload are expected to be bracketed images of the same shot.",
+                "description": "Uploads multiple bracketed images to an AutoEnhance AI order.\n\n**Automatic Grouping (Default):**\n- All images in one upload call are automatically assigned the same group UUID\n- This makes each upload = one HDR image\n- Example: Upload 3 brackets → They all get the same group_id → Process as 1 HDR\n\n**Custom Grouping (Advanced):**\n- Optionally specify different group IDs for files in the same upload\n- Example: groups=\"living-room,living-room,living-room,kitchen,kitchen,kitchen\"\n- This creates multiple HDR groups in one upload call\n\n**Workflow:**\n1. Upload bedroom brackets (3 images) → Auto-grouped as one HDR\n2. Upload kitchen brackets (3 images) → Auto-grouped as another HDR\n3. Process with bracket_grouping=\"by_upload_group\" → 2 HDR images",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -645,7 +787,7 @@ const docTemplate = `{
                 "tags": [
                     "upload"
                 ],
-                "summary": "Upload images to order",
+                "summary": "Upload images with automatic or custom grouping",
                 "parameters": [
                     {
                         "type": "string",
@@ -660,37 +802,43 @@ const docTemplate = `{
                         "name": "images",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Advanced: Custom group ID for each file (comma-separated). If not provided, all files get the same auto-generated UUID.",
+                        "name": "groups",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.UploadResponse"
+                            "$ref": "#/definitions/models.UploadResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -734,25 +882,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -793,13 +941,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/instant-hdr-backend_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -807,7 +955,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "instant-hdr-backend_internal_models.BracketResponse": {
+        "models.BracketResponse": {
             "type": "object",
             "properties": {
                 "bracket_id": {
@@ -834,28 +982,33 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.BracketsResponse": {
+        "models.BracketsResponse": {
             "type": "object",
             "properties": {
                 "brackets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/instant-hdr-backend_internal_models.BracketResponse"
+                        "$ref": "#/definitions/models.BracketResponse"
                     }
                 }
             }
         },
-        "instant-hdr-backend_internal_models.CreateOrderRequest": {
+        "models.CreateOrderRequest": {
             "type": "object",
             "properties": {
                 "metadata": {
                     "description": "Optional metadata to store with order",
                     "type": "object",
                     "additionalProperties": true
+                },
+                "name": {
+                    "description": "Order name/description (e.g., \"123 Main St - Living Room\")",
+                    "type": "string",
+                    "example": "Property Shoot - 123 Main St"
                 }
             }
         },
-        "instant-hdr-backend_internal_models.DownloadImageRequest": {
+        "models.DownloadImageRequest": {
             "type": "object",
             "properties": {
                 "format": {
@@ -885,7 +1038,7 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.DownloadImageResponse": {
+        "models.DownloadImageResponse": {
             "type": "object",
             "properties": {
                 "credit_used": {
@@ -935,7 +1088,7 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.ErrorResponse": {
+        "models.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -946,7 +1099,7 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.FileInfo": {
+        "models.FileInfo": {
             "type": "object",
             "properties": {
                 "filename": {
@@ -957,7 +1110,7 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.FileResponse": {
+        "models.FileResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -983,18 +1136,18 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.FilesResponse": {
+        "models.FilesResponse": {
             "type": "object",
             "properties": {
                 "files": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/instant-hdr-backend_internal_models.FileResponse"
+                        "$ref": "#/definitions/models.FileResponse"
                     }
                 }
             }
         },
-        "instant-hdr-backend_internal_models.HealthResponse": {
+        "models.HealthResponse": {
             "type": "object",
             "properties": {
                 "status": {
@@ -1002,7 +1155,7 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.ImageResponse": {
+        "models.ImageResponse": {
             "type": "object",
             "properties": {
                 "downloaded": {
@@ -1040,29 +1193,29 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.ImagesResponse": {
+        "models.ImagesResponse": {
             "type": "object",
             "properties": {
                 "images": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/instant-hdr-backend_internal_models.ImageResponse"
+                        "$ref": "#/definitions/models.ImageResponse"
                     }
                 }
             }
         },
-        "instant-hdr-backend_internal_models.OrderListResponse": {
+        "models.OrderListResponse": {
             "type": "object",
             "properties": {
                 "orders": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/instant-hdr-backend_internal_models.OrderSummary"
+                        "$ref": "#/definitions/models.OrderSummary"
                     }
                 }
             }
         },
-        "instant-hdr-backend_internal_models.OrderResponse": {
+        "models.OrderResponse": {
             "type": "object",
             "properties": {
                 "autoenhance_status": {
@@ -1112,7 +1265,7 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.OrderSummary": {
+        "models.OrderSummary": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -1132,47 +1285,89 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.ProcessRequest": {
+        "models.ProcessRequest": {
             "type": "object",
             "properties": {
-                "enhance_type": {
-                    "description": "EnhanceType specifies the type of enhancement to apply\nOptions: \"property\", \"property_usa\", \"warm\", \"neutral\", \"modern\"\nDefault: \"property\" for real estate photography",
+                "ai_version": {
+                    "description": "AIVersion specifies the AI model version to use for processing.\nExamples: \"4.0\", \"5.2\", \"5.x\"\nVersions ending in .x (e.g., \"5.x\") will automatically use the latest minor version.\nDefault: Latest stable version (automatically selected by AutoEnhance)",
                     "type": "string",
+                    "example": "5.x"
+                },
+                "bracket_grouping": {
+                    "description": "BracketGrouping specifies how uploaded brackets are organized into HDR images.\nOptions: \"by_upload_group\", \"auto\", \"all\", \"individual\", or custom array\n- \"by_upload_group\" (RECOMMENDED): Groups brackets by group_id assigned during upload\n- \"auto\": Groups brackets sequentially by sets (e.g., every 3 brackets = 1 HDR)\n- \"all\": Merges ALL brackets into ONE HDR image (maximum dynamic range)\n- \"individual\": Each bracket becomes a separate image (no HDR merging)\n- Custom array: [[id1,id2,id3],[id4,id5]] - Specify exact bracket groupings by bracket_id\nDefault: \"by_upload_group\"",
+                    "type": "string",
+                    "example": "by_upload_group"
+                },
+                "brackets_per_image": {
+                    "description": "BracketsPerImage specifies how many consecutive brackets to group into one HDR image.\nOnly used when bracket_grouping is \"auto\". This tells the system to group brackets sequentially.\n\nExample with 6 brackets and brackets_per_image=3:\n  - Brackets [1,2,3] → HDR Image #1\n  - Brackets [4,5,6] → HDR Image #2\n\nCommon values:\n- 3 (DEFAULT): Standard 3-exposure HDR (underexposed, normal, overexposed)\n  Best for: Most real estate shots, typical bracketing workflows\n- 5: 5-exposure HDR for more dynamic range\n  Best for: High-contrast scenes, sunset/sunrise shots\n- 7: 7-exposure HDR for maximum detail in shadows and highlights\n  Best for: Extreme lighting (bright windows + dark interiors)\n\nNote: More brackets = better HDR but longer processing time\nDefault: 3",
+                    "type": "integer",
+                    "example": 3
+                },
+                "cloud_type": {
+                    "description": "CloudType specifies what type of clouds to add when sky replacement is enabled.\nOptions: \"CLEAR\", \"LOW_CLOUD\", \"HIGH_CLOUD\"\n- \"CLEAR\": Clear blue sky with minimal clouds\n- \"LOW_CLOUD\": Low-altitude clouds for subtle effect\n- \"HIGH_CLOUD\": High-altitude clouds for more dramatic skies\nDefault: null (AutoEnhance chooses automatically based on scene)",
+                    "type": "string",
+                    "enum": [
+                        "CLEAR",
+                        "LOW_CLOUD",
+                        "HIGH_CLOUD"
+                    ],
+                    "example": "CLEAR"
+                },
+                "enhance_type": {
+                    "description": "EnhanceType specifies the type of enhancement to apply to the image.\nOptions: \"property\", \"property_usa\", \"warm\", \"neutral\", \"modern\"\n- \"property\" (DEFAULT): Best for real estate photography - balanced enhancement\n- \"property_usa\": USA-specific real estate enhancement (for AI version \u003c 4.0)\n- \"warm\": Warm color grading for cozy, inviting feel (AI version \u003e= 4.0)\n- \"neutral\": Neutral color grading for natural look (AI version \u003e= 4.0)\n- \"modern\": Modern, contemporary enhancement style (AI version \u003e= 4.0)\nDefault: \"property\"",
+                    "type": "string",
+                    "enum": [
+                        "property",
+                        "property_usa",
+                        "warm",
+                        "neutral",
+                        "modern"
+                    ],
                     "example": "property"
                 },
                 "lens_correction": {
+                    "description": "LensCorrection removes lens distortion (barrel/pincushion effect).\nCorrects curved lines caused by wide-angle lenses commonly used in real estate.\nRecommended for all real estate photos.\nDefault: true",
                     "type": "boolean",
                     "example": true
                 },
                 "metadata": {
-                    "description": "Optional metadata to store with the processing request",
+                    "description": "Optional metadata to store with the processing request for your own tracking",
                     "type": "object",
                     "additionalProperties": true
                 },
                 "privacy": {
+                    "description": "Privacy blurs faces and license plates for privacy compliance.\nUseful for public listings where privacy protection is required.\nDefault: false",
                     "type": "boolean",
                     "example": false
                 },
                 "sky_replacement": {
+                    "description": "SkyReplacement enables AI-powered sky replacement with realistic clouds.\nWhen enabled, dull or overcast skies are replaced with attractive blue skies.\nWorks best with outdoor property photos.\nDefault: true (recommended for real estate)",
                     "type": "boolean",
                     "example": true
                 },
                 "upscale": {
+                    "description": "Upscale increases image resolution using AI upscaling technology.\nDoubles the resolution while maintaining quality.\nWarning: Significantly increases processing time and final file size.\nDefault: false",
                     "type": "boolean",
                     "example": false
                 },
                 "vertical_correction": {
+                    "description": "VerticalCorrection automatically corrects vertical perspective distortion.\nStraightens walls and vertical lines that appear tilted due to camera angle.\nEssential for professional real estate photography.\nDefault: true (highly recommended)",
                     "type": "boolean",
                     "example": true
                 },
                 "window_pull_type": {
-                    "description": "\"NONE\", \"ONLY_WINDOWS\", \"WINDOWS_WITH_SKIES\"",
+                    "description": "WindowPullType controls how window views are enhanced.\nOptions: \"NONE\", \"ONLY_WINDOWS\", \"WINDOWS_WITH_SKIES\"\n- \"NONE\": No window enhancement (keep original window views)\n- \"ONLY_WINDOWS\": Enhance window views only (bring out detail)\n- \"WINDOWS_WITH_SKIES\" (DEFAULT): Enhance windows AND replace exterior skies visible through windows (requires AI version \u003e= 5.2)\nDefault: \"WINDOWS_WITH_SKIES\" (recommended for best results)",
                     "type": "string",
-                    "example": "ONLY_WINDOWS"
+                    "enum": [
+                        "NONE",
+                        "ONLY_WINDOWS",
+                        "WINDOWS_WITH_SKIES"
+                    ],
+                    "example": "WINDOWS_WITH_SKIES"
                 }
             }
         },
-        "instant-hdr-backend_internal_models.ProcessResponse": {
+        "models.ProcessResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -1190,7 +1385,7 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.StatusResponse": {
+        "models.StatusResponse": {
             "type": "object",
             "properties": {
                 "autoenhance_status": {
@@ -1230,7 +1425,7 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.UploadErrorInfo": {
+        "models.UploadErrorInfo": {
             "type": "object",
             "properties": {
                 "error": {
@@ -1245,19 +1440,19 @@ const docTemplate = `{
                 }
             }
         },
-        "instant-hdr-backend_internal_models.UploadResponse": {
+        "models.UploadResponse": {
             "type": "object",
             "properties": {
                 "errors": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/instant-hdr-backend_internal_models.UploadErrorInfo"
+                        "$ref": "#/definitions/models.UploadErrorInfo"
                     }
                 },
                 "files": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/instant-hdr-backend_internal_models.FileInfo"
+                        "$ref": "#/definitions/models.FileInfo"
                     }
                 },
                 "order_id": {

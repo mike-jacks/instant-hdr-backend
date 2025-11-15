@@ -758,6 +758,30 @@ func (c *Client) DownloadOriginal(imageID string, options DownloadOptions) ([]by
 	return data, nil
 }
 
+// DeleteImage deletes an image by ID
+func (c *Client) DeleteImage(imageID string) error {
+	url := c.baseURL + "/v3/images/" + imageID
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("x-api-key", c.apiKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to delete image: status %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
 // RetryWithBackoff executes a function with exponential backoff retry logic
 func (c *Client) RetryWithBackoff(fn func() error, maxRetries int) error {
 	backoffs := []time.Duration{1 * time.Second, 2 * time.Second, 4 * time.Second}

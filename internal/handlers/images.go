@@ -405,6 +405,100 @@ func (h *ImagesHandler) DownloadImage(c *gin.Context) {
 	})
 }
 
+// DeleteImage godoc
+// @Summary     Delete a processed image
+// @Description Deletes a processed image from AutoEnhance AI and all associated files from Supabase Storage and database
+// @Tags        images
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       order_id path string true "Order ID (UUID)"
+// @Param       image_id path string true "Image ID from AutoEnhance"
+// @Success     200 {object} map[string]string "message"
+// @Failure     400 {object} models.ErrorResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Failure     404 {object} models.ErrorResponse
+// @Failure     500 {object} models.ErrorResponse
+// @Router      /orders/{order_id}/images/{image_id} [delete]
+func (h *ImagesHandler) DeleteImage(c *gin.Context) {
+	if h.dbClient == nil || h.storageClient == nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "storage not available"})
+		return
+	}
+
+	userIDStr, exists := c.Get(middleware.UserIDKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "user id not found"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid user id"})
+		return
+	}
+
+	orderIDStr := c.Param("order_id")
+	orderID, err := uuid.Parse(orderIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid order id"})
+		return
+	}
+
+	imageID := c.Param("image_id")
+	if imageID == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "image_id is required"})
+		return
+	}
+
+	// Verify order belongs to user
+	_, err = h.dbClient.GetOrder(orderID, userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, models.ErrorResponse{
+			Error:   "order not found",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Delete from AutoEnhance AI (this is the main delete)
+	err = h.autoenhanceClient.RetryWithBackoff(func() error {
+		return h.autoenhanceClient.DeleteImage(imageID)
+	}, 3)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "failed to delete image from AutoEnhance",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Get all files associated with this image from our database
+	dbFiles, _ := h.dbClient.GetOrderFiles(orderID, userID)
+	
+	// Delete all files from Supabase Storage that match this image_id
+	deletedCount := 0
+	for _, file := range dbFiles {
+		// Check if this file belongs to the deleted image
+		if strings.Contains(file.Filename, imageID) {
+			// Delete from Supabase Storage
+			if file.StoragePath != "" {
+				_ = h.storageClient.DeleteFile(file.StoragePath)
+			}
+			
+			// Delete from database
+			_ = h.dbClient.DeleteOrderFile(file.ID)
+			deletedCount++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("Image deleted successfully from AutoEnhance and %d associated file(s) removed from Supabase", deletedCount),
+		"image_id": imageID,
+		"deleted_files": deletedCount,
+	})
+}
+
 // Helper function to extract image ID from filename
 // Filename format: {image_id}_{quality}.jpg
 func extractImageIDFromFilename(filename string) string {

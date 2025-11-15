@@ -179,6 +179,14 @@ func (d *DatabaseClient) GetOrderFiles(orderID, userID uuid.UUID) ([]models.Orde
 	return files, nil
 }
 
+func (d *DatabaseClient) DeleteOrderFile(fileID uuid.UUID) error {
+	_, err := d.db.Exec(`
+		DELETE FROM order_files
+		WHERE id = $1
+	`, fileID)
+	return err
+}
+
 func (d *DatabaseClient) CreateBracket(bracket *models.Bracket) error {
 	_, err := d.db.Exec(`
 		INSERT INTO brackets (order_id, bracket_id, image_id, filename, upload_url, is_uploaded, metadata)

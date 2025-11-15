@@ -64,13 +64,20 @@ func (h *OrdersHandler) CreateOrder(c *gin.Context) {
 		req.Metadata = make(map[string]interface{})
 	}
 
+	// Use provided name or default
+	orderName := req.Name
+	if orderName == "" {
+		orderName = "Order" // Default name
+	}
+
 	// Create AutoEnhance order - let them generate the order_id
 	// We'll use that order_id as our primary key
 	var autoenhanceOrder *autoenhance.OrderOut
 	err = h.autoenhanceClient.RetryWithBackoff(func() error {
 		var err error
-		// Don't pass order_id - let AutoEnhance generate it
-		autoenhanceOrder, err = h.autoenhanceClient.CreateOrder("", "")
+		// Don't pass order_id (empty string) - let AutoEnhance generate it
+		// But do pass the order name
+		autoenhanceOrder, err = h.autoenhanceClient.CreateOrder("", orderName)
 		return err
 	}, 3)
 	if err != nil {

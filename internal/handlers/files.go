@@ -194,3 +194,80 @@ func (h *FilesHandler) GetBrackets(c *gin.Context) {
 
 	c.JSON(http.StatusOK, models.BracketsResponse{Brackets: bracketResponses})
 }
+
+// DeleteBracket godoc
+// @Summary     Delete an uploaded bracket
+// @Description Deletes a bracket (uploaded raw image) from AutoEnhance AI. Note: Brackets are automatically cleaned up after successful processing.
+// @Tags        brackets
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       order_id path string true "Order ID (UUID)"
+// @Param       bracket_id path string true "Bracket ID from AutoEnhance"
+// @Success     200 {object} map[string]string "message"
+// @Failure     400 {object} models.ErrorResponse
+// @Failure     401 {object} models.ErrorResponse
+// @Failure     404 {object} models.ErrorResponse
+// @Failure     500 {object} models.ErrorResponse
+// @Router      /orders/{order_id}/brackets/{bracket_id} [delete]
+func (h *FilesHandler) DeleteBracket(c *gin.Context) {
+	if h.dbClient == nil || h.autoenhanceClient == nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "services not available"})
+		return
+	}
+
+	userIDStr, exists := c.Get(middleware.UserIDKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "user id not found"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid user id"})
+		return
+	}
+
+	orderIDStr := c.Param("order_id")
+	orderID, err := uuid.Parse(orderIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "invalid order id"})
+		return
+	}
+
+	bracketID := c.Param("bracket_id")
+	if bracketID == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bracket_id is required"})
+		return
+	}
+
+	// Verify order belongs to user
+	_, err = h.dbClient.GetOrder(orderID, userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, models.ErrorResponse{
+			Error:   "order not found",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Delete from AutoEnhance AI
+	err = h.autoenhanceClient.RetryWithBackoff(func() error {
+		return h.autoenhanceClient.DeleteBracket(bracketID)
+	}, 3)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "failed to delete bracket from AutoEnhance",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Note: We keep the bracket record in our database for record-keeping
+	// Only the AutoEnhance bracket is deleted
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "Bracket deleted successfully from AutoEnhance",
+		"bracket_id": bracketID,
+	})
+}

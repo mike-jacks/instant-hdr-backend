@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -32,14 +33,30 @@ func NewUploadHandler(autoenhanceClient *autoenhance.Client, dbClient *supabase.
 }
 
 // Upload godoc
-// @Summary     Upload images to order
-// @Description Uploads multiple bracketed images to an AutoEnhance AI order. All images in a single upload are expected to be bracketed images of the same shot.
+// @Summary     Upload images with automatic or custom grouping
+// @Description Uploads multiple bracketed images to an AutoEnhance AI order.
+// @Description
+// @Description **Automatic Grouping (Default):**
+// @Description - All images in one upload call are automatically assigned the same group UUID
+// @Description - This makes each upload = one HDR image
+// @Description - Example: Upload 3 brackets → They all get the same group_id → Process as 1 HDR
+// @Description
+// @Description **Custom Grouping (Advanced):**
+// @Description - Optionally specify different group IDs for files in the same upload
+// @Description - Example: groups="living-room,living-room,living-room,kitchen,kitchen,kitchen"
+// @Description - This creates multiple HDR groups in one upload call
+// @Description
+// @Description **Workflow:**
+// @Description 1. Upload bedroom brackets (3 images) → Auto-grouped as one HDR
+// @Description 2. Upload kitchen brackets (3 images) → Auto-grouped as another HDR
+// @Description 3. Process with bracket_grouping="by_upload_group" → 2 HDR images
 // @Tags        upload
 // @Accept      multipart/form-data
 // @Produce     json
 // @Security    Bearer
 // @Param       order_id path string true "Order ID (UUID)"
 // @Param       images formData file true "Bracketed images (multiple files allowed)"
+// @Param       groups formData string false "Advanced: Custom group ID for each file (comma-separated). If not provided, all files get the same auto-generated UUID."
 // @Success     200 {object} models.UploadResponse
 // @Failure     400 {object} models.ErrorResponse
 // @Failure     401 {object} models.ErrorResponse
@@ -124,6 +141,37 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		return
 	}
 
+	// Parse optional group identifiers (comma-separated)
+	// e.g., "shot1,shot1,shot1,shot2,shot2,shot2"
+	// If not provided, automatically generate a single UUID for all files in this upload
+	groupsParam := c.PostForm("groups")
+	var groups []string
+	if groupsParam != "" {
+		// User provided explicit groups
+		groups = strings.Split(groupsParam, ",")
+		// Trim whitespace from each group
+		for i, g := range groups {
+			groups[i] = strings.TrimSpace(g)
+		}
+		
+		// Validate: groups length must match files length
+		if len(groups) != len(files) {
+			c.JSON(http.StatusBadRequest, models.ErrorResponse{
+				Error:   "groups count mismatch",
+				Message: fmt.Sprintf("provided %d group identifiers but %d files", len(groups), len(files)),
+			})
+			return
+		}
+	} else {
+		// Auto-generate a single group UUID for all files in this upload
+		// This ensures all brackets uploaded together are grouped as one HDR image
+		uploadGroupID := uuid.New().String()
+		groups = make([]string, len(files))
+		for i := range groups {
+			groups[i] = uploadGroupID
+		}
+	}
+
 	// Publish upload_started event
 	h.realtimeClient.PublishOrderEvent(orderID, "upload_started",
 		supabase.UploadStartedPayload(orderID, len(files)))
@@ -134,7 +182,12 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 	// Create brackets and upload files
 	uploadedFiles := make([]models.FileInfo, 0)
 	uploadErrors := make([]models.UploadErrorInfo, 0)
-	for _, file := range files {
+	for fileIdx, file := range files {
+		// Get group ID for this file (if provided)
+		var groupID string
+		if len(groups) > 0 {
+			groupID = groups[fileIdx]
+		}
 		// Open file
 		src, err := file.Open()
 		if err != nil {
@@ -276,12 +329,25 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		if bracket.ImageID != "" {
 			bracketModel.ImageID = sql.NullString{String: bracket.ImageID, Valid: true}
 		}
-		// If bracket has metadata from AutoEnhance, use it
+		
+		// Combine AutoEnhance metadata with our group_id
+		metadata := make(map[string]interface{})
+		
+		// If bracket has metadata from AutoEnhance, start with that
 		if bracket.Metadata != nil && len(bracket.Metadata) > 0 {
-			if metadataBytes, err := json.Marshal(bracket.Metadata); err == nil {
-				bracketModel.Metadata = json.RawMessage(metadataBytes)
-			}
+			metadata = bracket.Metadata
 		}
+		
+		// Add group_id if provided
+		if groupID != "" {
+			metadata["group_id"] = groupID
+		}
+		
+		// Marshal and store
+		if metadataBytes, err := json.Marshal(metadata); err == nil {
+			bracketModel.Metadata = json.RawMessage(metadataBytes)
+		}
+		
 		if err := h.dbClient.CreateBracket(bracketModel); err != nil {
 			uploadErrors = append(uploadErrors, models.UploadErrorInfo{
 				Filename: file.Filename,

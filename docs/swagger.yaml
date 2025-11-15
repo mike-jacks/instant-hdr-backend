@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  instant-hdr-backend_internal_models.BracketResponse:
+  models.BracketResponse:
     properties:
       bracket_id:
         type: string
@@ -18,21 +18,25 @@ definitions:
         additionalProperties: true
         type: object
     type: object
-  instant-hdr-backend_internal_models.BracketsResponse:
+  models.BracketsResponse:
     properties:
       brackets:
         items:
-          $ref: '#/definitions/instant-hdr-backend_internal_models.BracketResponse'
+          $ref: '#/definitions/models.BracketResponse'
         type: array
     type: object
-  instant-hdr-backend_internal_models.CreateOrderRequest:
+  models.CreateOrderRequest:
     properties:
       metadata:
         additionalProperties: true
         description: Optional metadata to store with order
         type: object
+      name:
+        description: Order name/description (e.g., "123 Main St - Living Room")
+        example: Property Shoot - 123 Main St
+        type: string
     type: object
-  instant-hdr-backend_internal_models.DownloadImageRequest:
+  models.DownloadImageRequest:
     properties:
       format:
         description: |-
@@ -66,7 +70,7 @@ definitions:
         example: true
         type: boolean
     type: object
-  instant-hdr-backend_internal_models.DownloadImageResponse:
+  models.DownloadImageResponse:
     properties:
       credit_used:
         description: CreditUsed indicates if this download cost a credit
@@ -107,21 +111,21 @@ definitions:
         example: true
         type: boolean
     type: object
-  instant-hdr-backend_internal_models.ErrorResponse:
+  models.ErrorResponse:
     properties:
       error:
         type: string
       message:
         type: string
     type: object
-  instant-hdr-backend_internal_models.FileInfo:
+  models.FileInfo:
     properties:
       filename:
         type: string
       size:
         type: integer
     type: object
-  instant-hdr-backend_internal_models.FileResponse:
+  models.FileResponse:
     properties:
       created_at:
         type: string
@@ -138,19 +142,19 @@ definitions:
       storage_url:
         type: string
     type: object
-  instant-hdr-backend_internal_models.FilesResponse:
+  models.FilesResponse:
     properties:
       files:
         items:
-          $ref: '#/definitions/instant-hdr-backend_internal_models.FileResponse'
+          $ref: '#/definitions/models.FileResponse'
         type: array
     type: object
-  instant-hdr-backend_internal_models.HealthResponse:
+  models.HealthResponse:
     properties:
       status:
         type: string
     type: object
-  instant-hdr-backend_internal_models.ImageResponse:
+  models.ImageResponse:
     properties:
       downloaded:
         type: boolean
@@ -176,21 +180,21 @@ definitions:
       status:
         type: string
     type: object
-  instant-hdr-backend_internal_models.ImagesResponse:
+  models.ImagesResponse:
     properties:
       images:
         items:
-          $ref: '#/definitions/instant-hdr-backend_internal_models.ImageResponse'
+          $ref: '#/definitions/models.ImageResponse'
         type: array
     type: object
-  instant-hdr-backend_internal_models.OrderListResponse:
+  models.OrderListResponse:
     properties:
       orders:
         items:
-          $ref: '#/definitions/instant-hdr-backend_internal_models.OrderSummary'
+          $ref: '#/definitions/models.OrderSummary'
         type: array
     type: object
-  instant-hdr-backend_internal_models.OrderResponse:
+  models.OrderResponse:
     properties:
       autoenhance_status:
         description: AutoEnhance data (when available)
@@ -224,7 +228,7 @@ definitions:
       uploaded_brackets:
         type: integer
     type: object
-  instant-hdr-backend_internal_models.OrderSummary:
+  models.OrderSummary:
     properties:
       created_at:
         type: string
@@ -237,40 +241,141 @@ definitions:
       updated_at:
         type: string
     type: object
-  instant-hdr-backend_internal_models.ProcessRequest:
+  models.ProcessRequest:
     properties:
+      ai_version:
+        description: |-
+          AIVersion specifies the AI model version to use for processing.
+          Examples: "4.0", "5.2", "5.x"
+          Versions ending in .x (e.g., "5.x") will automatically use the latest minor version.
+          Default: Latest stable version (automatically selected by AutoEnhance)
+        example: 5.x
+        type: string
+      bracket_grouping:
+        description: |-
+          BracketGrouping specifies how uploaded brackets are organized into HDR images.
+          Options: "by_upload_group", "auto", "all", "individual", or custom array
+          - "by_upload_group" (RECOMMENDED): Groups brackets by group_id assigned during upload
+          - "auto": Groups brackets sequentially by sets (e.g., every 3 brackets = 1 HDR)
+          - "all": Merges ALL brackets into ONE HDR image (maximum dynamic range)
+          - "individual": Each bracket becomes a separate image (no HDR merging)
+          - Custom array: [[id1,id2,id3],[id4,id5]] - Specify exact bracket groupings by bracket_id
+          Default: "by_upload_group"
+        example: by_upload_group
+        type: string
+      brackets_per_image:
+        description: |-
+          BracketsPerImage specifies how many consecutive brackets to group into one HDR image.
+          Only used when bracket_grouping is "auto". This tells the system to group brackets sequentially.
+
+          Example with 6 brackets and brackets_per_image=3:
+            - Brackets [1,2,3] → HDR Image #1
+            - Brackets [4,5,6] → HDR Image #2
+
+          Common values:
+          - 3 (DEFAULT): Standard 3-exposure HDR (underexposed, normal, overexposed)
+            Best for: Most real estate shots, typical bracketing workflows
+          - 5: 5-exposure HDR for more dynamic range
+            Best for: High-contrast scenes, sunset/sunrise shots
+          - 7: 7-exposure HDR for maximum detail in shadows and highlights
+            Best for: Extreme lighting (bright windows + dark interiors)
+
+          Note: More brackets = better HDR but longer processing time
+          Default: 3
+        example: 3
+        type: integer
+      cloud_type:
+        description: |-
+          CloudType specifies what type of clouds to add when sky replacement is enabled.
+          Options: "CLEAR", "LOW_CLOUD", "HIGH_CLOUD"
+          - "CLEAR": Clear blue sky with minimal clouds
+          - "LOW_CLOUD": Low-altitude clouds for subtle effect
+          - "HIGH_CLOUD": High-altitude clouds for more dramatic skies
+          Default: null (AutoEnhance chooses automatically based on scene)
+        enum:
+        - CLEAR
+        - LOW_CLOUD
+        - HIGH_CLOUD
+        example: CLEAR
+        type: string
       enhance_type:
         description: |-
-          EnhanceType specifies the type of enhancement to apply
+          EnhanceType specifies the type of enhancement to apply to the image.
           Options: "property", "property_usa", "warm", "neutral", "modern"
-          Default: "property" for real estate photography
+          - "property" (DEFAULT): Best for real estate photography - balanced enhancement
+          - "property_usa": USA-specific real estate enhancement (for AI version < 4.0)
+          - "warm": Warm color grading for cozy, inviting feel (AI version >= 4.0)
+          - "neutral": Neutral color grading for natural look (AI version >= 4.0)
+          - "modern": Modern, contemporary enhancement style (AI version >= 4.0)
+          Default: "property"
+        enum:
+        - property
+        - property_usa
+        - warm
+        - neutral
+        - modern
         example: property
         type: string
       lens_correction:
+        description: |-
+          LensCorrection removes lens distortion (barrel/pincushion effect).
+          Corrects curved lines caused by wide-angle lenses commonly used in real estate.
+          Recommended for all real estate photos.
+          Default: true
         example: true
         type: boolean
       metadata:
         additionalProperties: true
-        description: Optional metadata to store with the processing request
+        description: Optional metadata to store with the processing request for your
+          own tracking
         type: object
       privacy:
+        description: |-
+          Privacy blurs faces and license plates for privacy compliance.
+          Useful for public listings where privacy protection is required.
+          Default: false
         example: false
         type: boolean
       sky_replacement:
+        description: |-
+          SkyReplacement enables AI-powered sky replacement with realistic clouds.
+          When enabled, dull or overcast skies are replaced with attractive blue skies.
+          Works best with outdoor property photos.
+          Default: true (recommended for real estate)
         example: true
         type: boolean
       upscale:
+        description: |-
+          Upscale increases image resolution using AI upscaling technology.
+          Doubles the resolution while maintaining quality.
+          Warning: Significantly increases processing time and final file size.
+          Default: false
         example: false
         type: boolean
       vertical_correction:
+        description: |-
+          VerticalCorrection automatically corrects vertical perspective distortion.
+          Straightens walls and vertical lines that appear tilted due to camera angle.
+          Essential for professional real estate photography.
+          Default: true (highly recommended)
         example: true
         type: boolean
       window_pull_type:
-        description: '"NONE", "ONLY_WINDOWS", "WINDOWS_WITH_SKIES"'
-        example: ONLY_WINDOWS
+        description: |-
+          WindowPullType controls how window views are enhanced.
+          Options: "NONE", "ONLY_WINDOWS", "WINDOWS_WITH_SKIES"
+          - "NONE": No window enhancement (keep original window views)
+          - "ONLY_WINDOWS": Enhance window views only (bring out detail)
+          - "WINDOWS_WITH_SKIES" (DEFAULT): Enhance windows AND replace exterior skies visible through windows (requires AI version >= 5.2)
+          Default: "WINDOWS_WITH_SKIES" (recommended for best results)
+        enum:
+        - NONE
+        - ONLY_WINDOWS
+        - WINDOWS_WITH_SKIES
+        example: WINDOWS_WITH_SKIES
         type: string
     type: object
-  instant-hdr-backend_internal_models.ProcessResponse:
+  models.ProcessResponse:
     properties:
       message:
         type: string
@@ -282,7 +387,7 @@ definitions:
       status:
         type: string
     type: object
-  instant-hdr-backend_internal_models.StatusResponse:
+  models.StatusResponse:
     properties:
       autoenhance_status:
         description: AutoEnhance data
@@ -309,7 +414,7 @@ definitions:
       uploaded_brackets:
         type: integer
     type: object
-  instant-hdr-backend_internal_models.UploadErrorInfo:
+  models.UploadErrorInfo:
     properties:
       error:
         type: string
@@ -319,15 +424,15 @@ definitions:
         description: '"create_bracket", "upload", "verify", "database"'
         type: string
     type: object
-  instant-hdr-backend_internal_models.UploadResponse:
+  models.UploadResponse:
     properties:
       errors:
         items:
-          $ref: '#/definitions/instant-hdr-backend_internal_models.UploadErrorInfo'
+          $ref: '#/definitions/models.UploadErrorInfo'
         type: array
       files:
         items:
-          $ref: '#/definitions/instant-hdr-backend_internal_models.FileInfo'
+          $ref: '#/definitions/models.FileInfo'
         type: array
       order_id:
         type: string
@@ -359,7 +464,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.HealthResponse'
+            $ref: '#/definitions/models.HealthResponse'
       summary: Health check
       tags:
       - health
@@ -374,15 +479,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.OrderListResponse'
+            $ref: '#/definitions/models.OrderListResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: List all orders
@@ -398,26 +503,26 @@ paths:
         in: body
         name: request
         schema:
-          $ref: '#/definitions/instant-hdr-backend_internal_models.CreateOrderRequest'
+          $ref: '#/definitions/models.CreateOrderRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.OrderResponse'
+            $ref: '#/definitions/models.OrderResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: Create a new order
@@ -447,19 +552,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: Delete an order
@@ -481,19 +586,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.OrderResponse'
+            $ref: '#/definitions/models.OrderResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: Get order details
@@ -516,22 +621,69 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.BracketsResponse'
+            $ref: '#/definitions/models.BracketsResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: Get uploaded brackets
+      tags:
+      - brackets
+  /orders/{order_id}/brackets/{bracket_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 'Deletes a bracket (uploaded raw image) from AutoEnhance AI. Note:
+        Brackets are automatically cleaned up after successful processing.'
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: order_id
+        required: true
+        type: string
+      - description: Bracket ID from AutoEnhance
+        in: path
+        name: bracket_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete an uploaded bracket
       tags:
       - brackets
   /orders/{order_id}/files:
@@ -552,19 +704,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.FilesResponse'
+            $ref: '#/definitions/models.FilesResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: Get order files
@@ -588,26 +740,73 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ImagesResponse'
+            $ref: '#/definitions/models.ImagesResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: List processed images
+      tags:
+      - images
+  /orders/{order_id}/images/{image_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a processed image from AutoEnhance AI and all associated
+        files from Supabase Storage and database
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: order_id
+        required: true
+        type: string
+      - description: Image ID from AutoEnhance
+        in: path
+        name: image_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete a processed image
       tags:
       - images
   /orders/{order_id}/images/{image_id}/download:
@@ -645,30 +844,30 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/instant-hdr-backend_internal_models.DownloadImageRequest'
+          $ref: '#/definitions/models.DownloadImageRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.DownloadImageResponse'
+            $ref: '#/definitions/models.DownloadImageResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: Download processed image to Supabase Storage
@@ -678,44 +877,84 @@ paths:
     post:
       consumes:
       - application/json
-      description: Initiates HDR processing and merging of uploaded images using AutoEnhance
-        AI. Groups brackets into images and processes them with the specified enhancement
-        options.
+      description: |-
+        Initiates HDR processing and merging of uploaded images using AutoEnhance AI.
+
+        **Processing Options:**
+
+        **enhance_type** (default: "property"):
+        - "property": Best for real estate - balanced enhancement
+        - "warm": Warm color grading for cozy feel (AI >= 4.0)
+        - "neutral": Neutral natural look (AI >= 4.0)
+        - "modern": Contemporary enhancement (AI >= 4.0)
+
+        **sky_replacement** (default: true):
+        - Replaces dull skies with attractive blue skies
+
+        **cloud_type** (optional):
+        - "CLEAR": Clear blue sky, "LOW_CLOUD": Subtle clouds, "HIGH_CLOUD": Dramatic clouds
+
+        **window_pull_type** (default: "WINDOWS_WITH_SKIES"):
+        - "NONE": No window enhancement
+        - "ONLY_WINDOWS": Enhance window views only
+        - "WINDOWS_WITH_SKIES": Enhance windows + replace exterior skies (AI >= 5.2) - BEST RESULTS
+
+        **vertical_correction** (default: true):
+        - Straightens tilted walls and vertical lines
+
+        **lens_correction** (default: true):
+        - Removes wide-angle lens distortion
+
+        **upscale** (default: false):
+        - AI upscaling to double resolution (increases processing time)
+
+        **privacy** (default: false):
+        - Blurs faces and license plates
+
+        **bracket_grouping** (default: "by_upload_group"):
+        - "by_upload_group": Use groups from upload
+        - "auto": Sequential sets (every N brackets = 1 HDR, where N = brackets_per_image)
+        - "all": One mega-HDR from all brackets
+        - "individual": Separate images (no HDR)
+
+        **brackets_per_image** (default: 3, only for "auto" mode):
+        - How many consecutive brackets to merge into one HDR image
+        - Example: 6 brackets + brackets_per_image=3 → 2 HDR images ([1,2,3] and [4,5,6])
+        - 3 = Standard HDR, 5 = High dynamic range, 7 = Extreme lighting
       parameters:
       - description: Order ID (UUID)
         in: path
         name: order_id
         required: true
         type: string
-      - description: Processing options. enhance_type defaults to 'property' for real
-          estate photography.
+      - description: Processing options with defaults shown in model
         in: body
         name: request
         schema:
-          $ref: '#/definitions/instant-hdr-backend_internal_models.ProcessRequest'
+          $ref: '#/definitions/models.ProcessRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ProcessResponse'
+            $ref: '#/definitions/models.ProcessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: Process images with HDR merge
@@ -739,19 +978,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.StatusResponse'
+            $ref: '#/definitions/models.StatusResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: Get order status
@@ -761,9 +1000,23 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Uploads multiple bracketed images to an AutoEnhance AI order. All
-        images in a single upload are expected to be bracketed images of the same
-        shot.
+      description: |-
+        Uploads multiple bracketed images to an AutoEnhance AI order.
+
+        **Automatic Grouping (Default):**
+        - All images in one upload call are automatically assigned the same group UUID
+        - This makes each upload = one HDR image
+        - Example: Upload 3 brackets → They all get the same group_id → Process as 1 HDR
+
+        **Custom Grouping (Advanced):**
+        - Optionally specify different group IDs for files in the same upload
+        - Example: groups="living-room,living-room,living-room,kitchen,kitchen,kitchen"
+        - This creates multiple HDR groups in one upload call
+
+        **Workflow:**
+        1. Upload bedroom brackets (3 images) → Auto-grouped as one HDR
+        2. Upload kitchen brackets (3 images) → Auto-grouped as another HDR
+        3. Process with bracket_grouping="by_upload_group" → 2 HDR images
       parameters:
       - description: Order ID (UUID)
         in: path
@@ -775,32 +1028,37 @@ paths:
         name: images
         required: true
         type: file
+      - description: 'Advanced: Custom group ID for each file (comma-separated). If
+          not provided, all files get the same auto-generated UUID.'
+        in: formData
+        name: groups
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.UploadResponse'
+            $ref: '#/definitions/models.UploadResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
-      summary: Upload images to order
+      summary: Upload images with automatic or custom grouping
       tags:
       - upload
   /orders/{order_id}/verify:
@@ -826,19 +1084,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - Bearer: []
       summary: Verify order has uploaded images in AutoEnhance
@@ -868,11 +1126,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/instant-hdr-backend_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: AutoEnhance AI webhook endpoint
       tags:
       - webhooks
