@@ -105,7 +105,9 @@ func (r *RealtimeClient) PublishEvent(channel string, event string, payload map[
 	n, _ := resp.Body.Read(bodyBytes)
 	responseBody := string(bodyBytes[:n])
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+	// Accept 200 (OK), 201 (Created), and 202 (Accepted) as success status codes
+	// 202 is commonly returned for asynchronous operations
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusAccepted {
 		log.Printf("[Realtime] Broadcast failed: channel=%s, event=%s, status=%d, body=%s",
 			channel, event, resp.StatusCode, responseBody)
 		return fmt.Errorf("realtime broadcast failed: status %d, channel: %s, event: %s, body: %s. "+
