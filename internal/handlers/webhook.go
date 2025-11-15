@@ -59,11 +59,17 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 	log.Printf("[Webhook] Headers: %v", c.Request.Header)
 
 	// Verify authentication token (only if webhook token is configured)
+	// AutoEnhance sends the token in the "Authentication" header (not "Authorization")
 	if h.config.AutoEnhanceWebhookToken != "" {
-		authHeader := c.GetHeader("Authorization")
+		// Check both "Authentication" (AutoEnhance format) and "Authorization" (standard format)
+		authHeader := c.GetHeader("Authentication")
 		if authHeader == "" {
-			log.Printf("[Webhook] Missing Authorization header (webhook token is configured)")
-			c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "missing authorization token"})
+			authHeader = c.GetHeader("Authorization")
+		}
+		
+		if authHeader == "" {
+			log.Printf("[Webhook] Missing Authentication/Authorization header (webhook token is configured)")
+			c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "missing authentication token"})
 			return
 		}
 
@@ -75,7 +81,7 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 		if token != h.config.AutoEnhanceWebhookToken {
 			log.Printf("[Webhook] Invalid token: received='%s' (length: %d), expected='%s' (length: %d)",
 				token, len(token), h.config.AutoEnhanceWebhookToken, len(h.config.AutoEnhanceWebhookToken))
-			c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "invalid authorization token"})
+			c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "invalid authentication token"})
 			return
 		}
 		log.Printf("[Webhook] Token validated successfully")
