@@ -172,6 +172,8 @@ func main() {
 	// API routes - public endpoints (no auth)
 	apiPublic := router.Group("/api/v1")
 	apiPublic.GET("/health", handlers.HealthHandler)
+	// Webhook endpoint (uses AutoEnhance webhook token, not JWT)
+	apiPublic.POST("/webhooks/autoenhance", webhookHandler.HandleWebhook)
 
 	// API routes - protected endpoints (with auth)
 	api := router.Group("/api/v1")
@@ -198,9 +200,6 @@ func main() {
 	api.GET("/orders/:order_id/images", imagesHandler.ListImages)
 	api.POST("/orders/:order_id/images/:image_id/download", imagesHandler.DownloadImage)
 	api.DELETE("/orders/:order_id/images/:image_id", imagesHandler.DeleteImage)
-
-	// Webhook (no auth, uses token authentication)
-	router.POST("/api/v1/webhooks/autoenhance", webhookHandler.HandleWebhook)
 
 	// Start server
 	port := cfg.Port
