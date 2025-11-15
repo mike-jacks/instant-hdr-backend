@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
@@ -34,10 +35,12 @@ func (d *DatabaseClient) CreateOrder(orderID, userID uuid.UUID, metadata map[str
 	err := d.db.QueryRow(`
 		INSERT INTO orders (id, user_id, status, metadata)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, user_id, status, progress, metadata, error_message, created_at, updated_at
+		RETURNING id, user_id, status, progress, metadata, error_message, created_at, updated_at,
+		          name, autoenhance_status, is_processing, is_merging, is_deleted, total_images, autoenhance_last_updated_at
 	`, orderID, userID, "created", metadataJSON).Scan(
 		&order.ID, &order.UserID, &order.Status,
 		&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
+		&order.Name, &order.AutoEnhanceStatus, &order.IsProcessing, &order.IsMerging, &order.IsDeleted, &order.TotalImages, &order.AutoEnhanceLastUpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create order: %w", err)
@@ -49,12 +52,14 @@ func (d *DatabaseClient) CreateOrder(orderID, userID uuid.UUID, metadata map[str
 func (d *DatabaseClient) GetOrder(orderID, userID uuid.UUID) (*models.Order, error) {
 	var order models.Order
 	err := d.db.QueryRow(`
-		SELECT id, user_id, status, progress, metadata, error_message, created_at, updated_at
+		SELECT id, user_id, status, progress, metadata, error_message, created_at, updated_at,
+		       name, autoenhance_status, is_processing, is_merging, is_deleted, total_images, autoenhance_last_updated_at
 		FROM orders
 		WHERE id = $1 AND user_id = $2
 	`, orderID, userID).Scan(
 		&order.ID, &order.UserID, &order.Status,
 		&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
+		&order.Name, &order.AutoEnhanceStatus, &order.IsProcessing, &order.IsMerging, &order.IsDeleted, &order.TotalImages, &order.AutoEnhanceLastUpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get order: %w", err)
@@ -65,7 +70,8 @@ func (d *DatabaseClient) GetOrder(orderID, userID uuid.UUID) (*models.Order, err
 
 func (d *DatabaseClient) ListOrders(userID uuid.UUID) ([]models.Order, error) {
 	rows, err := d.db.Query(`
-		SELECT id, user_id, status, progress, metadata, error_message, created_at, updated_at
+		SELECT id, user_id, status, progress, metadata, error_message, created_at, updated_at,
+		       name, autoenhance_status, is_processing, is_merging, is_deleted, total_images, autoenhance_last_updated_at
 		FROM orders
 		WHERE user_id = $1
 		ORDER BY created_at DESC
@@ -81,6 +87,7 @@ func (d *DatabaseClient) ListOrders(userID uuid.UUID) ([]models.Order, error) {
 		err := rows.Scan(
 			&order.ID, &order.UserID, &order.Status,
 			&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
+			&order.Name, &order.AutoEnhanceStatus, &order.IsProcessing, &order.IsMerging, &order.IsDeleted, &order.TotalImages, &order.AutoEnhanceLastUpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan order: %w", err)
@@ -127,12 +134,14 @@ func (d *DatabaseClient) GetOrderByAutoEnhanceOrderID(autoenhanceOrderID string)
 	// Query by id (no userID check since this is used for webhooks)
 	var order models.Order
 	err = d.db.QueryRow(`
-		SELECT id, user_id, status, progress, metadata, error_message, created_at, updated_at
+		SELECT id, user_id, status, progress, metadata, error_message, created_at, updated_at,
+		       name, autoenhance_status, is_processing, is_merging, is_deleted, total_images, autoenhance_last_updated_at
 		FROM orders
 		WHERE id = $1
 	`, orderID).Scan(
 		&order.ID, &order.UserID, &order.Status,
 		&order.Progress, &order.Metadata, &order.ErrorMessage, &order.CreatedAt, &order.UpdatedAt,
+		&order.Name, &order.AutoEnhanceStatus, &order.IsProcessing, &order.IsMerging, &order.IsDeleted, &order.TotalImages, &order.AutoEnhanceLastUpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get order: %w", err)
@@ -231,6 +240,30 @@ func (d *DatabaseClient) UpdateBracketImageID(bracketID string, imageID string) 
 		SET image_id = $1
 		WHERE bracket_id = $2
 	`, imageID, bracketID)
+	return err
+}
+
+// SyncAutoEnhanceOrderData updates the cached AutoEnhance fields in the database
+func (d *DatabaseClient) SyncAutoEnhanceOrderData(orderID uuid.UUID, name string, status string, isProcessing, isMerging, isDeleted bool, totalImages int, lastUpdatedAt *time.Time) error {
+	var lastUpdated interface{}
+	if lastUpdatedAt != nil {
+		lastUpdated = *lastUpdatedAt
+	} else {
+		lastUpdated = nil
+	}
+
+	_, err := d.db.Exec(`
+		UPDATE orders
+		SET name = $1,
+		    autoenhance_status = $2,
+		    is_processing = $3,
+		    is_merging = $4,
+		    is_deleted = $5,
+		    total_images = $6,
+		    autoenhance_last_updated_at = $7,
+		    updated_at = NOW()
+		WHERE id = $8
+	`, name, status, isProcessing, isMerging, isDeleted, totalImages, lastUpdated, orderID)
 	return err
 }
 

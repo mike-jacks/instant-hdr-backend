@@ -4,6 +4,7 @@ import "time"
 
 type OrderResponse struct {
 	ID                string                 `json:"order_id"`
+	Name              string                 `json:"name,omitempty"` // Order name from AutoEnhance
 	Status            string                 `json:"status"`
 	Progress          int                    `json:"progress"`
 	Metadata          map[string]interface{} `json:"metadata,omitempty"`
@@ -12,11 +13,14 @@ type OrderResponse struct {
 	UpdatedAt         time.Time              `json:"updated_at"`
 	// AutoEnhance data (when available)
 	AutoEnhanceStatus string                   `json:"autoenhance_status,omitempty"`
+	AutoEnhanceLastUpdatedAt *time.Time        `json:"autoenhance_last_updated_at,omitempty"` // Last update time from AutoEnhance
 	TotalBrackets     int                      `json:"total_brackets,omitempty"`
 	UploadedBrackets  int                      `json:"uploaded_brackets,omitempty"`
 	TotalImages       int                      `json:"total_images,omitempty"`
 	Images            []map[string]interface{} `json:"images,omitempty"`
 	IsProcessing      bool                     `json:"is_processing,omitempty"`
+	IsMerging         bool                     `json:"is_merging,omitempty"` // Indicates if brackets are currently being merged
+	IsDeleted         bool                     `json:"is_deleted,omitempty"` // Indicates if order was deleted in AutoEnhance
 }
 
 type OrderListResponse struct {
@@ -25,6 +29,7 @@ type OrderListResponse struct {
 
 type OrderSummary struct {
 	ID        string    `json:"order_id"`
+	Name      string    `json:"name,omitempty"` // Order name from AutoEnhance
 	Status    string    `json:"status"`
 	Progress  int       `json:"progress"`
 	CreatedAt time.Time `json:"created_at"`
@@ -63,11 +68,14 @@ type StatusResponse struct {
 	UpdatedAt         time.Time                `json:"updated_at"`
 	// AutoEnhance data
 	AutoEnhanceStatus string                   `json:"autoenhance_status,omitempty"`
+	AutoEnhanceLastUpdatedAt *time.Time        `json:"autoenhance_last_updated_at,omitempty"` // Last update time from AutoEnhance
 	TotalBrackets     int                      `json:"total_brackets,omitempty"`
 	UploadedBrackets  int                      `json:"uploaded_brackets,omitempty"`
 	TotalImages       int                      `json:"total_images,omitempty"`
 	Images            []map[string]interface{} `json:"images,omitempty"`
 	IsProcessing      bool                     `json:"is_processing,omitempty"`
+	IsMerging          bool                     `json:"is_merging,omitempty"` // Indicates if brackets are currently being merged
+	IsDeleted         bool                     `json:"is_deleted,omitempty"` // Indicates if order was deleted in AutoEnhance
 }
 
 type FilesResponse struct {

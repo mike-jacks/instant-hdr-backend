@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -224,8 +225,10 @@ func (h *ProcessHandler) Process(c *gin.Context) {
 	}
 
 	// Initiate processing with retry
+	var processResult *autoenhance.OrderHDRProcessOut
 	err = h.autoenhanceClient.RetryWithBackoff(func() error {
-		_, err := h.autoenhanceClient.ProcessOrder(order.ID.String(), processReq)
+		var err error
+		processResult, err = h.autoenhanceClient.ProcessOrder(order.ID.String(), processReq)
 		return err
 	}, 3)
 	if err != nil {
@@ -239,6 +242,24 @@ func (h *ProcessHandler) Process(c *gin.Context) {
 
 	// Update order status
 	h.dbClient.UpdateOrderStatus(orderID, "processing", 0)
+
+	// Sync AutoEnhance data to database (status, is_processing, etc.)
+	if processResult != nil {
+		var lastUpdated *time.Time
+		if !processResult.LastUpdatedAt.Time.IsZero() {
+			lastUpdated = &processResult.LastUpdatedAt.Time
+		}
+		_ = h.dbClient.SyncAutoEnhanceOrderData(
+			orderID,
+			processResult.Name,
+			processResult.Status,
+			processResult.IsProcessing,
+			processResult.IsMerging,
+			processResult.IsDeleted,
+			int(processResult.TotalImages),
+			lastUpdated,
+		)
+	}
 
 	// Publish processing_started event
 	h.realtimeClient.PublishOrderEvent(orderID, "processing_started",

@@ -85,6 +85,14 @@ func (h *StatusHandler) GetStatus(c *gin.Context) {
 			response.AutoEnhanceStatus = autoenhanceOrder.Status
 			response.TotalImages = int(autoenhanceOrder.TotalImages)
 			response.IsProcessing = autoenhanceOrder.IsProcessing
+			response.IsMerging = autoenhanceOrder.IsMerging
+			response.IsDeleted = autoenhanceOrder.IsDeleted
+			
+			// Include AutoEnhance's last updated timestamp
+			if !autoenhanceOrder.LastUpdatedAt.Time.IsZero() {
+				lastUpdated := autoenhanceOrder.LastUpdatedAt.Time
+				response.AutoEnhanceLastUpdatedAt = &lastUpdated
+			}
 
 			// Convert images to generic map
 			if len(autoenhanceOrder.Images) > 0 {

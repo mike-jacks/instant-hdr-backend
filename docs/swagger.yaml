@@ -192,6 +192,9 @@ definitions:
     type: object
   models.OrderResponse:
     properties:
+      autoenhance_last_updated_at:
+        description: Last update time from AutoEnhance
+        type: string
       autoenhance_status:
         description: AutoEnhance data (when available)
         type: string
@@ -204,11 +207,20 @@ definitions:
           additionalProperties: true
           type: object
         type: array
+      is_deleted:
+        description: Indicates if order was deleted in AutoEnhance
+        type: boolean
+      is_merging:
+        description: Indicates if brackets are currently being merged
+        type: boolean
       is_processing:
         type: boolean
       metadata:
         additionalProperties: true
         type: object
+      name:
+        description: Order name from AutoEnhance
+        type: string
       order_id:
         type: string
       progress:
@@ -227,6 +239,9 @@ definitions:
   models.OrderSummary:
     properties:
       created_at:
+        type: string
+      name:
+        description: Order name from AutoEnhance
         type: string
       order_id:
         type: string
@@ -383,6 +398,9 @@ definitions:
     type: object
   models.StatusResponse:
     properties:
+      autoenhance_last_updated_at:
+        description: Last update time from AutoEnhance
+        type: string
       autoenhance_status:
         description: AutoEnhance data
         type: string
@@ -391,6 +409,12 @@ definitions:
           additionalProperties: true
           type: object
         type: array
+      is_deleted:
+        description: Indicates if order was deleted in AutoEnhance
+        type: boolean
+      is_merging:
+        description: Indicates if brackets are currently being merged
+        type: boolean
       is_processing:
         type: boolean
       order_id:

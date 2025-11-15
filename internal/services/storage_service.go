@@ -52,6 +52,22 @@ func (s *StorageService) HandleProcessingCompleted(autoenhanceOrderID, imageID s
 		return
 	}
 
+	// Sync AutoEnhance data to database (status, is_processing, total_images, etc.)
+	var lastUpdated *time.Time
+	if !autoenhanceOrder.LastUpdatedAt.Time.IsZero() {
+		lastUpdated = &autoenhanceOrder.LastUpdatedAt.Time
+	}
+	_ = s.dbClient.SyncAutoEnhanceOrderData(
+		order.ID,
+		autoenhanceOrder.Name,
+		autoenhanceOrder.Status,
+		autoenhanceOrder.IsProcessing,
+		autoenhanceOrder.IsMerging,
+		autoenhanceOrder.IsDeleted,
+		int(autoenhanceOrder.TotalImages),
+		lastUpdated,
+	)
+
 	if len(autoenhanceOrder.Images) == 0 {
 		// No images yet - might still be processing
 		return
@@ -155,6 +171,25 @@ func (s *StorageService) HandleProcessingFailed(autoenhanceOrderID, errorMsg str
 
 	// Update order with error
 	s.dbClient.UpdateOrderError(order.ID, errorMsg)
+
+	// Sync AutoEnhance data to database (to get latest status, is_processing, etc.)
+	autoenhanceOrder, err := s.autoenhanceClient.GetOrder(order.ID.String())
+	if err == nil {
+		var lastUpdated *time.Time
+		if !autoenhanceOrder.LastUpdatedAt.Time.IsZero() {
+			lastUpdated = &autoenhanceOrder.LastUpdatedAt.Time
+		}
+		_ = s.dbClient.SyncAutoEnhanceOrderData(
+			order.ID,
+			autoenhanceOrder.Name,
+			autoenhanceOrder.Status,
+			autoenhanceOrder.IsProcessing,
+			autoenhanceOrder.IsMerging,
+			autoenhanceOrder.IsDeleted,
+			int(autoenhanceOrder.TotalImages),
+			lastUpdated,
+		)
+	}
 
 	// Publish failed event
 	s.realtimeClient.PublishOrderEvent(order.ID, "processing_failed",

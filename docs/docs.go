@@ -1211,6 +1211,10 @@ const docTemplate = `{
         "models.OrderResponse": {
             "type": "object",
             "properties": {
+                "autoenhance_last_updated_at": {
+                    "description": "Last update time from AutoEnhance",
+                    "type": "string"
+                },
                 "autoenhance_status": {
                     "description": "AutoEnhance data (when available)",
                     "type": "string"
@@ -1228,12 +1232,24 @@ const docTemplate = `{
                         "additionalProperties": true
                     }
                 },
+                "is_deleted": {
+                    "description": "Indicates if order was deleted in AutoEnhance",
+                    "type": "boolean"
+                },
+                "is_merging": {
+                    "description": "Indicates if brackets are currently being merged",
+                    "type": "boolean"
+                },
                 "is_processing": {
                     "type": "boolean"
                 },
                 "metadata": {
                     "type": "object",
                     "additionalProperties": true
+                },
+                "name": {
+                    "description": "Order name from AutoEnhance",
+                    "type": "string"
                 },
                 "order_id": {
                     "type": "string"
@@ -1262,6 +1278,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Order name from AutoEnhance",
                     "type": "string"
                 },
                 "order_id": {
@@ -1378,6 +1398,10 @@ const docTemplate = `{
         "models.StatusResponse": {
             "type": "object",
             "properties": {
+                "autoenhance_last_updated_at": {
+                    "description": "Last update time from AutoEnhance",
+                    "type": "string"
+                },
                 "autoenhance_status": {
                     "description": "AutoEnhance data",
                     "type": "string"
@@ -1388,6 +1412,14 @@ const docTemplate = `{
                         "type": "object",
                         "additionalProperties": true
                     }
+                },
+                "is_deleted": {
+                    "description": "Indicates if order was deleted in AutoEnhance",
+                    "type": "boolean"
+                },
+                "is_merging": {
+                    "description": "Indicates if brackets are currently being merged",
+                    "type": "boolean"
                 },
                 "is_processing": {
                     "type": "boolean"

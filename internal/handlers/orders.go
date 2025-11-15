@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -106,19 +107,56 @@ func (h *OrdersHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
+	// Sync AutoEnhance data (name, status, etc.) to database
+	if h.autoenhanceClient != nil && autoenhanceOrder != nil {
+		var lastUpdated *time.Time
+		if !autoenhanceOrder.LastUpdatedAt.Time.IsZero() {
+			lastUpdated = &autoenhanceOrder.LastUpdatedAt.Time
+		}
+		_ = h.dbClient.SyncAutoEnhanceOrderData(
+			orderID,
+			autoenhanceOrder.Name,
+			autoenhanceOrder.Status,
+			autoenhanceOrder.IsProcessing,
+			autoenhanceOrder.IsMerging,
+			autoenhanceOrder.IsDeleted,
+			int(autoenhanceOrder.TotalImages),
+			lastUpdated,
+		)
+		// Refresh order to get synced data
+		order, _ = h.dbClient.GetOrder(orderID, userID)
+	}
+
 	var metadata map[string]interface{}
 	if len(order.Metadata) > 0 {
 		json.Unmarshal(order.Metadata, &metadata)
 	}
 
-	c.JSON(http.StatusOK, models.OrderResponse{
+	response := models.OrderResponse{
 		ID:        order.ID.String(),
 		Status:    order.Status,
 		Progress:  order.Progress,
 		Metadata:  metadata,
 		CreatedAt: order.CreatedAt,
 		UpdatedAt: order.UpdatedAt,
-	})
+	}
+
+	// Include cached AutoEnhance data
+	if order.Name.Valid {
+		response.Name = order.Name.String
+	}
+	if order.AutoEnhanceStatus.Valid {
+		response.AutoEnhanceStatus = order.AutoEnhanceStatus.String
+	}
+	response.IsProcessing = order.IsProcessing
+	response.IsMerging = order.IsMerging
+	response.IsDeleted = order.IsDeleted
+	response.TotalImages = order.TotalImages
+	if order.AutoEnhanceLastUpdatedAt.Valid {
+		response.AutoEnhanceLastUpdatedAt = &order.AutoEnhanceLastUpdatedAt.Time
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // ListOrders godoc
@@ -161,13 +199,20 @@ func (h *OrdersHandler) ListOrders(c *gin.Context) {
 
 	summaries := make([]models.OrderSummary, len(orders))
 	for i, o := range orders {
-		summaries[i] = models.OrderSummary{
+		summary := models.OrderSummary{
 			ID:        o.ID.String(),
 			Status:    o.Status,
 			Progress:  o.Progress,
 			CreatedAt: o.CreatedAt,
 			UpdatedAt: o.UpdatedAt,
 		}
+
+		// Use cached name from database (no API call needed!)
+		if o.Name.Valid {
+			summary.Name = o.Name.String
+		}
+
+		summaries[i] = summary
 	}
 
 	c.JSON(http.StatusOK, models.OrderListResponse{Orders: summaries})
@@ -238,14 +283,61 @@ func (h *OrdersHandler) GetOrder(c *gin.Context) {
 		response.ErrorMessage = order.ErrorMessage.String
 	}
 
-	// Fetch AutoEnhance data
+	// Use cached AutoEnhance data from database (fast!)
+	if order.Name.Valid {
+		response.Name = order.Name.String
+	}
+	if order.AutoEnhanceStatus.Valid {
+		response.AutoEnhanceStatus = order.AutoEnhanceStatus.String
+	}
+	response.IsProcessing = order.IsProcessing
+	response.IsMerging = order.IsMerging
+	response.IsDeleted = order.IsDeleted
+	response.TotalImages = order.TotalImages
+	if order.AutoEnhanceLastUpdatedAt.Valid {
+		response.AutoEnhanceLastUpdatedAt = &order.AutoEnhanceLastUpdatedAt.Time
+	}
+
+	// Optionally refresh from AutoEnhance in background (for real-time data like images)
+	// But return cached data immediately for fast response
 	if h.autoenhanceClient != nil {
+		// Fetch fresh data in background and sync to DB
+		go func() {
+			autoenhanceOrder, err := h.autoenhanceClient.GetOrder(order.ID.String())
+			if err == nil {
+				var lastUpdated *time.Time
+				if !autoenhanceOrder.LastUpdatedAt.Time.IsZero() {
+					lastUpdated = &autoenhanceOrder.LastUpdatedAt.Time
+				}
+				_ = h.dbClient.SyncAutoEnhanceOrderData(
+					order.ID,
+					autoenhanceOrder.Name,
+					autoenhanceOrder.Status,
+					autoenhanceOrder.IsProcessing,
+					autoenhanceOrder.IsMerging,
+					autoenhanceOrder.IsDeleted,
+					int(autoenhanceOrder.TotalImages),
+					lastUpdated,
+				)
+			}
+
+			// Get brackets info
+			brackets, err := h.autoenhanceClient.GetOrderBrackets(order.ID.String())
+			if err == nil {
+				response.TotalBrackets = len(brackets.Brackets)
+				uploadedCount := 0
+				for _, bracket := range brackets.Brackets {
+					if bracket.IsUploaded {
+						uploadedCount++
+					}
+				}
+				response.UploadedBrackets = uploadedCount
+			}
+		}()
+
+		// For images, we still need to fetch from AutoEnhance (not cached)
 		autoenhanceOrder, err := h.autoenhanceClient.GetOrder(order.ID.String())
 		if err == nil {
-			response.AutoEnhanceStatus = autoenhanceOrder.Status
-			response.TotalImages = int(autoenhanceOrder.TotalImages)
-			response.IsProcessing = autoenhanceOrder.IsProcessing
-
 			// Convert images to generic map
 			if len(autoenhanceOrder.Images) > 0 {
 				response.Images = make([]map[string]interface{}, len(autoenhanceOrder.Images))
@@ -258,7 +350,7 @@ func (h *OrdersHandler) GetOrder(c *gin.Context) {
 			}
 		}
 
-		// Get brackets info
+		// Get brackets info synchronously for response
 		brackets, err := h.autoenhanceClient.GetOrderBrackets(order.ID.String())
 		if err == nil {
 			response.TotalBrackets = len(brackets.Brackets)
